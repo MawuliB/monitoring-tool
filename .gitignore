@@ -6,5 +6,6 @@ __pycache__/
 *.db
 src/app/components/
 src/app/models/
-src/app/services
+src/app/services/
 src/app/*.ts
+log-manager/
