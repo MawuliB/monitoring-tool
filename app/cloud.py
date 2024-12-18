@@ -11,6 +11,7 @@ class LogEvent:
     message: str
     log_stream: str
     ingestion_time: datetime
+    level: str = 'INFO'  # Default level
 
 class CloudWatchLogsReader:
     """A class to read and process AWS CloudWatch logs."""
@@ -23,6 +24,17 @@ class CloudWatchLogsReader:
             region_name=region_name
         )
         self.client = session.client('logs')
+        
+    def _parse_log_level(self, message: str) -> str:
+        """Parse log level from message. Default to INFO if not found."""
+        message_lower = message.lower()
+        if 'error' in message_lower:
+            return 'ERROR'
+        elif 'warn' in message_lower:
+            return 'WARN'
+        elif 'debug' in message_lower:
+            return 'DEBUG'
+        return 'INFO'
         
     def get_log_events(
         self,
@@ -58,8 +70,26 @@ class CloudWatchLogsReader:
                         timestamp=datetime.fromtimestamp(event['timestamp'] / 1000),
                         message=event['message'],
                         log_stream=event['logStreamName'],
-                        ingestion_time=datetime.fromtimestamp(event['ingestionTime'] / 1000)
+                        ingestion_time=datetime.fromtimestamp(event['ingestionTime'] / 1000),
+                        level=self._parse_log_level(event['message'])
                     )
                     
         except ClientError as e:
-            raise Exception(f"Failed to retrieve logs: {str(e)}") 
+            raise Exception(f"Failed to retrieve logs: {str(e)}")
+        
+    def get_log_groups(self) -> List[Dict[str, str]]:
+        """Retrieve available log groups."""
+        try:
+            paginator = self.client.get_paginator('describe_log_groups')
+            log_groups = []
+            for page in paginator.paginate():
+                for group in page.get('logGroups', []):
+                    log_groups.append({
+                        'name': group['logGroupName'],
+                        'arn': group.get('arn', ''),
+                        'storedBytes': group.get('storedBytes', 0),
+                        'creationTime': datetime.fromtimestamp(group['creationTime'] / 1000).isoformat()
+                    })
+            return log_groups
+        except ClientError as e:
+            raise Exception(f"Failed to fetch log groups: {str(e)}")

@@ -4,8 +4,3 @@ env/
 reports/
 __pycache__/
 *.db
-src/app/components/
-src/app/models/
-src/app/services/
-src/app/*.ts
-log-manager/
