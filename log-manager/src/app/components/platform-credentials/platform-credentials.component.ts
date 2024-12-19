@@ -2,7 +2,6 @@ import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitte
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { LogGroupService, LogGroup } from '../../services/log-group.service';
 
 @Component({
   selector: 'app-platform-credentials',
@@ -26,21 +25,25 @@ import { LogGroupService, LogGroup } from '../../services/log-group.service';
           </div>
 
           <!-- Log Groups Selection -->
-          <div class="form-group" *ngIf="logGroups.length > 0">
+          <div class="form-group" *ngIf="logTypes.length > 0">
             <label>Log Groups</label>
             <select multiple formControlName="selectedLogGroups" class="form-control">
-              <option *ngFor="let group of logGroups" [value]="group.name">
-                {{ group.name }}
+              <option *ngFor="let group of logTypes" [value]="group">
+                {{ group }}
               </option>
             </select>
             <small class="text-muted">Hold Ctrl/Cmd to select multiple groups</small>
           </div>
         </ng-container>
 
-        <ng-container *ngIf="platform === 'azure'">
+        <ng-container *ngIf="platform === 'local'">
           <div class="form-group">
-            <label>Connection String</label>
-            <input type="password" formControlName="connectionString" />
+            <label>Log Type</label>
+            <select formControlName="logType" class="form-control">
+              <option *ngFor="let type of logTypes" [value]="type">
+                {{ type }}
+              </option>
+            </select>
           </div>
         </ng-container>
 
@@ -97,72 +100,98 @@ export class PlatformCredentialsComponent implements OnInit {
   
   credentialsForm: FormGroup;
   loading = false;
-  logGroups: LogGroup[] = [];
+  logTypes: string[] = [];
+  platformConfig: any;
 
   constructor(
-    private fb: FormBuilder, 
-    private apiService: ApiService,
-    private logGroupService: LogGroupService
+    private readonly fb: FormBuilder,
+    private readonly apiService: ApiService
   ) {
     this.credentialsForm = this.fb.group({
-      accessKeyId: ['', Validators.required],
-      secretAccessKey: ['', Validators.required],
-      region: ['', Validators.required],
-      connectionString: [''],
+      accessKeyId: [''],
+      secretAccessKey: [''],
+      region: [''],
+      logType: [''],
       selectedLogGroups: [[]]
     });
   }
 
   ngOnInit() {
-    this.loadLogGroups();
+    if (this.platform) {
+      this.loadPlatformConfig();
+    }
   }
 
-  loadLogGroups() {
-    if (this.platform === 'aws') {
-      this.logGroupService.getLogGroups().subscribe({
-        next: (response) => {
-          this.logGroups = response.log_groups;
-        },
-        error: (error) => {
-          console.error('Error loading log groups:', error);
-        }
-      });
+  private async loadPlatformConfig() {
+    try {
+      const response = await this.apiService.getPlatforms().toPromise();
+      this.platformConfig = response.platforms.find((p: any) => p.id === this.platform);
+      
+      if (this.platform === 'local') {
+        this.logTypes = this.platformConfig.logTypes;
+        this.updateFormValidation(false);
+      } else if (this.platform === 'aws') {
+        this.updateFormValidation(true);
+        this.loadAwsLogGroups();
+      }
+    } catch (error) {
+      console.error('Error loading platform config:', error);
+    }
+  }
+
+  private updateFormValidation(requiresCredentials: boolean) {
+    if (requiresCredentials) {
+      this.credentialsForm.get('accessKeyId')?.setValidators([Validators.required]);
+      this.credentialsForm.get('secretAccessKey')?.setValidators([Validators.required]);
+      this.credentialsForm.get('region')?.setValidators([Validators.required]);
+    } else {
+      this.credentialsForm.get('accessKeyId')?.clearValidators();
+      this.credentialsForm.get('secretAccessKey')?.clearValidators();
+      this.credentialsForm.get('region')?.clearValidators();
+    }
+    this.credentialsForm.updateValueAndValidity();
+  }
+
+  private async loadAwsLogGroups() {
+    try {
+      const response: any = await this.apiService.getLogGroups(this.platform).toPromise();
+      this.logTypes = response.logGroups;
+    } catch (error) {
+      console.error('Error loading AWS log groups:', error);
     }
   }
 
   async onSubmit() {
     if (this.credentialsForm.valid) {
       this.loading = true;
-
-      const credentials = {
-        platform: this.platform,
-        credentials: this.getCredentialsForPlatform()
-      };
-
       try {
-        await this.apiService.savePlatformCredentials(this.platform, credentials.credentials);
-        this.loading = false;
+        const credentials = this.getCredentialsForPlatform();
+        await this.apiService.savePlatformCredentials(this.platform, credentials).toPromise();
         this.credentialsSaved.emit();
       } catch (error) {
-        this.loading = false;
         console.error('Error saving credentials:', error);
+      } finally {
+        this.loading = false;
       }
     }
   }
 
   private getCredentialsForPlatform() {
+    const formValue = this.credentialsForm.value;
+    
     if (this.platform === 'aws') {
       return {
-        access_key: this.credentialsForm.get('accessKeyId')?.value,
-        secret_key: this.credentialsForm.get('secretAccessKey')?.value,
-        region: this.credentialsForm.get('region')?.value,
-        log_groups: this.credentialsForm.get('selectedLogGroups')?.value || []
+        access_key_id: formValue.accessKeyId,
+        secret_access_key: formValue.secretAccessKey,
+        region: formValue.region,
+        log_groups: formValue.selectedLogGroups
       };
-    } else if (this.platform === 'azure') {
+    } else if (this.platform === 'local') {
       return {
-        connection_string: this.credentialsForm.get('connectionString')?.value
+        log_type: formValue.logType
       };
     }
+    
     return {};
   }
 }

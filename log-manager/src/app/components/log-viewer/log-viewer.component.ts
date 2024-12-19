@@ -50,13 +50,25 @@ interface LogFilter {
         <ng-container *ngIf="!loading && !error">
           <app-log-table 
             *ngIf="view === 'table'"
-            [logs]="logs"
+            [logs]="paginatedLogs"
           ></app-log-table>
           
           <app-log-visualizations 
             *ngIf="view === 'visual'"
             [logs]="logs"
           ></app-log-visualizations>
+
+          <div *ngIf="view === 'table'" class="pagination">
+            <button 
+              [disabled]="currentPage === 1"
+              (click)="setPage(currentPage - 1)"
+            >Previous</button>
+            <span>Page {{ currentPage }} of {{ totalPages }}</span>
+            <button 
+              [disabled]="currentPage === totalPages"
+              (click)="setPage(currentPage + 1)"
+            >Next</button>
+          </div>
         </ng-container>
       </div>
     </div>
@@ -80,6 +92,11 @@ interface LogFilter {
       cursor: pointer;
     }
 
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     button.active {
       background: #007bff;
       color: white;
@@ -91,12 +108,12 @@ interface LogFilter {
       text-align: center;
     }
 
-    .error {
-      color: #dc3545;
-    }
-
-    .content-area {
+    .pagination {
       margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
     }
   `]
 })
@@ -108,7 +125,21 @@ export class LogViewerComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
-  constructor(private logService: LogService) {}
+  // Pagination state
+  currentPage = 1;
+  pageSize = 50;
+  
+  constructor(private readonly logService: LogService) {}
+
+  get totalPages(): number {
+    return Math.ceil(this.logs.length / this.pageSize);
+  }
+
+  get paginatedLogs(): LogEntry[] {
+    const start = (this.currentPage - 1) * this.pageSize;
+    const end = start + this.pageSize;
+    return this.logs.slice(start, end);
+  }
 
   async loadLogs() {
     if (!this.platform) return;
@@ -116,10 +147,21 @@ export class LogViewerComponent implements OnInit {
     try {
       this.loading = true;
       this.error = null;
-      this.logs = await this.logService.fetchLogs({ 
-        ...this.filters, 
-        platform: this.platform 
-      });
+      
+      // Default to last hour if no dates are selected
+      const now = new Date().toISOString();
+      const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+      console.log(this.filters);
+      this.logs = await this.logService.fetchLogs(
+        this.platform,
+        this.filters.startDate ?? oneHourAgo,
+        this.filters.endDate ?? now,
+        this.filters['logType'] ?? '',
+        this.filters['level'] ?? ''
+      );
+      
+      // Reset to first page when new logs are loaded
+      this.currentPage = 1;
     } catch (err) {
       this.error = 'Failed to fetch logs. Please try again later.';
       console.error('Log fetch error:', err);
@@ -139,5 +181,11 @@ export class LogViewerComponent implements OnInit {
 
   setView(view: 'table' | 'visual') {
     this.view = view;
+  }
+
+  setPage(page: number) {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+    }
   }
 }

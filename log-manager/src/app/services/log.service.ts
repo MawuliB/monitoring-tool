@@ -6,17 +6,25 @@ import { firstValueFrom } from 'rxjs';
   providedIn: 'root'
 })
 export class LogService {
-  private API_URL = 'http://localhost:8000';
+  private readonly API_URL = 'http://localhost:8000';
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
-  async fetchLogs(filters: any): Promise<any[]> {
+  async fetchLogs(platform: string, start_time: string, end_time: string, log_type: string, log_level: string): Promise<any[]> {
+    const filters = {
+      platform,
+      start_time,
+      end_time,
+      log_type,
+      log_level
+    };
     try {
-      return await firstValueFrom(
-        this.http.get<any[]>(`${this.API_URL}/logs`, {
+      const response = await firstValueFrom(
+        this.http.get<{ logs: any[] }>(`${this.API_URL}/logs`, {
           params: filters
         })
       );
+      return response.logs;
     } catch (error) {
       console.error('Error fetching logs:', error);
       return [];

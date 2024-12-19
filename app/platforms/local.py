@@ -13,7 +13,7 @@ class LocalPlatform(LogPlatform):
     ) -> List[Dict[str, Any]]:
         """Read logs from local files."""
         logs = []
-        path = credentials.get('path', '/var/log')  # Default path if not specified
+        path = credentials.get('path', '/var/log/syslog')  # Default path if not specified
         
         def parse_log_level(line: str) -> str:
             """Parse log level from line. Default to INFO if not found."""
