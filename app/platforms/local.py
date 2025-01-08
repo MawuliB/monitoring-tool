@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 import re
+import pytz
 
 class LocalPlatform(LogPlatform):
     async def get_logs(
@@ -15,6 +16,8 @@ class LocalPlatform(LogPlatform):
         """Read logs from local files."""
         logs = []
         path = credentials.get('path', '/var/log/syslog')  # Default path if not specified
+        start_time = datetime.fromisoformat(start_time.isoformat()).strftime("%Y-%m-%d %H:%M:%S")
+        end_time = datetime.fromisoformat(end_time.isoformat()).strftime("%Y-%m-%d %H:%M:%S")
         
         def parse_log_level(line: str) -> str:
             """Parse log level from line. Default to INFO if not found."""
@@ -29,7 +32,6 @@ class LocalPlatform(LogPlatform):
         
         def extract_timestamp(line: str) -> str:
             """Extract timestamp from a log line. Default to current time if not found."""
-            print(line)  # Debug: Print the line being processed
             timestamp_match = re.search(r'(\w{3})\s+(\d{1,2})\s+(\d{2}:\d{2}:\d{2})', line)
             if timestamp_match:
                 month_map = {
@@ -67,19 +69,18 @@ class LocalPlatform(LogPlatform):
                             'level': parse_log_level(line)
                         }
                         # Filter by time range
-                        log_time = datetime.fromisoformat(log_entry['timestamp'])
+                        log_time = datetime.fromisoformat(log_entry['timestamp']).strftime("%Y-%m-%d %H:%M:%S")
+
                         if start_time <= log_time <= end_time:
                             # Filter by name if provided
-                            print(filters)
                             if 'keyword' in filters and filters['keyword'] not in line:
                                 continue
                             # Filter by log level if provided
-                            if 'level' in filters and log_entry['level'].lower() != filters['level']:
+                            if 'level' in filters and log_entry['level'].upper() != filters['level']:
                                 continue
                             logs.append(log_entry)
         except Exception as e:
             print(f"Error reading local logs: {e}")
-        
         return logs
 
     def validate_credentials(self, credentials: Dict[str, str]) -> bool:
