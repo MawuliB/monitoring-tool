@@ -15,6 +15,9 @@ import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { LogVisualizationsComponent } from './components/log-visualizations/log-visualizations.component';
+import { BaseChartDirective} from 'ng2-charts';
+import { MessageModalComponent } from './message-modal/message-modal.component';
 
 @NgModule({
   declarations: [
@@ -33,7 +36,10 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     LogTableComponent,
     LoginComponent,
     RegisterComponent,
-    DashboardComponent
+    DashboardComponent,
+    LogVisualizationsComponent,
+    BaseChartDirective,
+    MessageModalComponent
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useValue: AuthInterceptor, multi: true }

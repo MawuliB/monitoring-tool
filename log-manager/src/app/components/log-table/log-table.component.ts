@@ -1,11 +1,13 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogEntry } from '../../models/log.model';
+import { MessageModalComponent } from '../../message-modal/message-modal.component';
+
 
 @Component({
   selector: 'app-log-table',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MessageModalComponent],
   template: `
     <div class="table-container">
       <table>
@@ -41,7 +43,7 @@ import { LogEntry } from '../../models/log.model';
               </span>
             </td>
             <td>{{ log.source }}</td>
-            <td class="message-cell">{{ log.message }}</td>
+            <td class="message-cell" (click)="openMessage(log.message)" title="Click to see full message">{{ log.message }}</td>
           </tr>
           <tr *ngIf="!logs.length">
             <td colspan="4" class="no-data">No logs found</td>
@@ -49,10 +51,12 @@ import { LogEntry } from '../../models/log.model';
         </tbody>
       </table>
     </div>
+    <app-message-modal #messageModal></app-message-modal>
   `,
   styles: [`
     .table-container {
       overflow-x: auto;
+      white-space: nowrap;
       margin: 1rem 0;
       background: white;
       border-radius: 4px;
@@ -87,6 +91,7 @@ import { LogEntry } from '../../models/log.model';
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      cursor: pointer;
     }
 
     .level-badge {
@@ -135,6 +140,7 @@ export class LogTableComponent {
   @Input() logs: LogEntry[] = [];
   sortField: keyof LogEntry = 'timestamp';
   sortOrder: 'asc' | 'desc' = 'desc';
+  @ViewChild('messageModal') messageModal!: MessageModalComponent;
 
   get sortedLogs(): LogEntry[] {
     return [...this.logs].sort((a, b) => {
@@ -158,5 +164,9 @@ export class LogTableComponent {
 
   formatDate(timestamp: string): string {
     return new Date(timestamp).toLocaleString();
+  }
+
+  openMessage(message: string) {
+    this.messageModal.open(message);
   }
 }

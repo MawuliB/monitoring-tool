@@ -3,7 +3,6 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 import re
-import pytz
 
 class LocalPlatform(LogPlatform):
     async def get_logs(
