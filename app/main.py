@@ -25,6 +25,11 @@ credentials.Base.metadata.create_all(bind=engine)
 
 platform_service = platform_service.PlatformService()
 
+local_log_dict = {
+    "system": "syslog",
+    "auth": "auth.log"
+}
+
 app = FastAPI(title="Log Management System")
 
 # CORS middleware
@@ -106,19 +111,19 @@ async def get_log_groups(
             platform_instance = LocalPlatform()
             log_groups = await platform_instance.get_log_groups({})
         else:
-            credentials = db.query(credentials.Credential).filter(
+            credential = db.query(credentials.Credential).filter(
                 credentials.Credential.user_id == current_user.id,
                 credentials.Credential.platform == platform
             ).first()
             
-            if not credentials:
+            if not credential:
                 raise HTTPException(status_code=404, detail="Credentials not found")
             
             platform_instance = await platform_service.get_user_platform(db, current_user.id)
             if not platform_instance:
                 raise HTTPException(status_code=404, detail="Platform not configured")
                 
-            log_groups = await platform_instance.get_log_groups(credentials.get_credentials())
+            log_groups = await platform_instance.get_log_groups(credential.get_credentials())
         
         return {"log_groups": log_groups}
     except Exception as e:
@@ -130,7 +135,8 @@ async def get_logs(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     log_type: Optional[str] = None,
-    level: Optional[str] = None,
+    log_level: Optional[str] = None,
+    keyword: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -142,11 +148,30 @@ async def get_logs(
 
         # Initialize filters
         filters = {}
+        
+        # get Id of user and use that to get Credential and get the log_type from path
+        user_id = current_user.id
+        credential = db.query(credentials.Credential).filter(
+            credentials.Credential.user_id == user_id,
+            credentials.Credential.platform == platform
+        ).first()
+        
+        if not credential:
+            raise HTTPException(status_code=404, detail="Credentials not found")
+        
+        log_type: CredentialCreate = credential.get_credentials()
+
         if log_type:
             if platform == "local":
-                filters["path"] = f"/var/log/{log_type}.log"
+                filters["path"] = f"/var/log/{local_log_dict[log_type['path']]}"
             else:
-                filters["log_groups"] = [log_type]
+                filters["log_groups"] = [log_type["path"]]
+
+        if log_level:
+            filters["level"] = log_level
+
+        if keyword:
+            filters["keyword"] = keyword
 
         print(filters)
 
@@ -162,7 +187,8 @@ async def get_logs(
         }
 
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    uvicorn.run("app.main:app", reload=True) 
+    uvicorn.run("app.main:app", reload=True)

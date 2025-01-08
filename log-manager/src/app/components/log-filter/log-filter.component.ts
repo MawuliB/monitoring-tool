@@ -111,7 +111,7 @@ export class LogFilterComponent {
   @Output() filterChange = new EventEmitter<any>();
   filterForm: FormGroup;
 
-  constructor(private fb: FormBuilder) {
+  constructor(private readonly fb: FormBuilder) {
     this.filterForm = this.fb.group({
       keyword: [''],
       startDate: [''],

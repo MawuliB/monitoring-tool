@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class CredentialsService {
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   savePlatformCredentials(platform: string | null, data: any) {
     // Replace with your actual API endpoint

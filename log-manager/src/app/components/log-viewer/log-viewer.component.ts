@@ -157,7 +157,8 @@ export class LogViewerComponent implements OnInit {
         this.filters.startDate ?? oneHourAgo,
         this.filters.endDate ?? now,
         this.filters['logType'] ?? '',
-        this.filters['level'] ?? ''
+        this.filters['level'] ?? '',
+        this.filters['keyword'] ?? ''
       );
       
       // Reset to first page when new logs are loaded

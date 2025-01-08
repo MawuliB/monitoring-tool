@@ -184,11 +184,11 @@ export class PlatformCredentialsComponent implements OnInit {
         access_key_id: formValue.accessKeyId,
         secret_access_key: formValue.secretAccessKey,
         region: formValue.region,
-        log_groups: formValue.selectedLogGroups
+        path: formValue.selectedLogGroups
       };
     } else if (this.platform === 'local') {
       return {
-        log_type: formValue.logType
+        path: formValue.logType
       };
     }
     
