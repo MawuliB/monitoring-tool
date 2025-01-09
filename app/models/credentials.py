@@ -3,9 +3,12 @@ from sqlalchemy.orm import relationship
 from ..database import Base
 from cryptography.fernet import Fernet
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Encryption key (in production, store this securely)
 ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", Fernet.generate_key())
+
 cipher_suite = Fernet(ENCRYPTION_KEY)
 
 class Credential(Base):
@@ -24,4 +27,4 @@ class Credential(Base):
     def get_credentials(self) -> dict:
         """Decrypt stored credentials"""
         decrypted = cipher_suite.decrypt(self.encrypted_data.encode())
-        return eval(decrypted.decode()) 
+        return eval(decrypted.decode())

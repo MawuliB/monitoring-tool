@@ -18,11 +18,11 @@ interface UserRegistration {
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = environment.apiUrl;
-  private tokenSubject = new BehaviorSubject<string | null>(localStorage.getItem('token'));
+  private readonly apiUrl = environment.apiUrl;
+  private readonly tokenSubject = new BehaviorSubject<string | null>(localStorage.getItem('token'));
   public token$ = this.tokenSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
   register(userData: UserRegistration): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, userData);

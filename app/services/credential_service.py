@@ -35,3 +35,16 @@ async def create_credential(
         id=db_credential.id,
         platform=db_credential.platform
     ) 
+
+
+async def get_credentials(db: Session, platform: str, user_id: int) -> Dict[str, Any]:
+    """Get credentials for a specific platform"""
+    db_credential = db.query(Credential).filter(
+        Credential.user_id == user_id,
+        Credential.platform == platform
+    ).first()
+    
+    if not db_credential:
+        return {}
+    
+    return db_credential.get_credentials()

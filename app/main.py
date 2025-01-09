@@ -87,6 +87,15 @@ async def add_credentials(
     """Add credentials for a specific platform"""
     return await credential_service.create_credential(db, platform, credential, current_user.id)
 
+@app.get("/credentials/{platform}")
+async def get_credentials(
+    platform: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get credentials for a specific platform"""
+    return await credential_service.get_credentials(db, platform, current_user.id)
+
 @app.get("/platforms")
 async def get_platforms():
     """Get list of available platforms with their configurations."""
@@ -107,10 +116,10 @@ async def get_log_groups(
 ):
     """Get available log groups for the specified platform."""
     try:
-        if platform == "local":
+        if platform == "local": # not neccessary
             platform_instance = LocalPlatform()
             log_groups = await platform_instance.get_log_groups({})
-        else:
+        elif platform == "aws":
             credential = db.query(credentials.Credential).filter(
                 credentials.Credential.user_id == current_user.id,
                 credentials.Credential.platform == platform
@@ -119,7 +128,7 @@ async def get_log_groups(
             if not credential:
                 raise HTTPException(status_code=404, detail="Credentials not found")
             
-            platform_instance = await platform_service.get_user_platform(db, current_user.id)
+            platform_instance = await platform_service.get_user_platform(db, current_user.id, platform)
             if not platform_instance:
                 raise HTTPException(status_code=404, detail="Platform not configured")
                 
@@ -142,7 +151,7 @@ async def get_logs(
 ):
     """Get all logs for the specified platform and filters."""
     try:
-        platform_instance = await platform_service.get_user_platform(db, current_user.id)
+        platform_instance = await platform_service.get_user_platform(db, current_user.id, platform)
         if not platform_instance:
             raise HTTPException(status_code=404, detail="Platform not configured")
 

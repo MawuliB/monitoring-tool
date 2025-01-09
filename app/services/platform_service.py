@@ -15,15 +15,18 @@ class PlatformService:
     }
 
     @staticmethod
-    async def get_user_platform(db: Session, user_id: int):
+    async def get_user_platform(db: Session, user_id: int, platform: str):
         """Get the platform instance for a user based on their stored credentials."""
-        credentials = db.query(Credential).filter(Credential.user_id == user_id).first()
+        credentials = db.query(Credential).filter(
+            Credential.user_id == user_id,
+            Credential.platform == platform
+        ).first()
         if not credentials:
             return LocalPlatform()  # Default to local if no credentials
 
-        if credentials.platform == "aws":
+        if platform == "aws":
             return AWSPlatform()
-        elif credentials.platform == "local":
+        elif platform == "local":
             return LocalPlatform()
         
         return LocalPlatform()  # Default to local for unknown platforms

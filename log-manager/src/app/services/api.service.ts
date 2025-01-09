@@ -15,6 +15,10 @@ export class ApiService {
     return this.http.post<void>(`${this.API_URL}/credentials/${platform}`, credentials);
   }
 
+  getPlatformCredentials(platform: string): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/credentials/${platform}`);
+  }
+
   getLogGroups(platform: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.API_URL}/log-groups?platform=${platform}`);
   }

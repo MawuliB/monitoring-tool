@@ -29,6 +29,7 @@ class AWSPlatform(LogPlatform):
         ]
 
     async def get_log_groups(self, credentials):
+        print(credentials)
         reader = CloudWatchLogsReader(
             region_name=credentials['region'],
             aws_access_key=credentials['access_key'],

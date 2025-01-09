@@ -28,7 +28,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
           <select formControlName="level">
             <option value="">All Levels</option>
             <option value="INFO">Info</option>
-            <option value="WARNING">Warning</option>
+            <option value="WARN">Warn</option>
             <option value="ERROR">Error</option>
             <option value="DEBUG">Debug</option>
           </select>

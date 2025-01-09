@@ -25,14 +25,14 @@ import { ApiService } from '../../services/api.service';
           </div>
 
           <!-- Log Groups Selection -->
-          <div class="form-group" *ngIf="logTypes.length > 0">
+          <div class="form-group" *ngIf="logGroups.length > 0">
             <label>Log Groups</label>
-            <select multiple formControlName="selectedLogGroups" class="form-control">
-              <option *ngFor="let group of logTypes" [value]="group">
+            <select formControlName="selectedLogGroups" class="form-control">
+              <option *ngFor="let group of logGroups" [value]="group">
                 {{ group }}
               </option>
             </select>
-            <small class="text-muted">Hold Ctrl/Cmd to select multiple groups</small>
+            <!-- <small class="text-muted">Hold Ctrl/Cmd to select multiple groups</small> -->
           </div>
         </ng-container>
 
@@ -101,6 +101,7 @@ export class PlatformCredentialsComponent implements OnInit {
   credentialsForm: FormGroup;
   loading = false;
   logTypes: string[] = [];
+  logGroups: string[] = [];
   platformConfig: any;
 
   constructor(
@@ -112,12 +113,18 @@ export class PlatformCredentialsComponent implements OnInit {
       secretAccessKey: [''],
       region: [''],
       logType: [''],
-      selectedLogGroups: [[]]
+      selectedLogGroups: ['']
     });
   }
 
   ngOnInit() {
     if (this.platform) {
+      this.loadPlatformConfig();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['platform'] && !changes['platform'].firstChange) {
       this.loadPlatformConfig();
     }
   }
@@ -133,6 +140,7 @@ export class PlatformCredentialsComponent implements OnInit {
       } else if (this.platform === 'aws') {
         this.updateFormValidation(true);
         this.loadAwsLogGroups();
+        this.getAndSetCredentials();
       }
     } catch (error) {
       console.error('Error loading platform config:', error);
@@ -155,9 +163,21 @@ export class PlatformCredentialsComponent implements OnInit {
   private async loadAwsLogGroups() {
     try {
       const response: any = await this.apiService.getLogGroups(this.platform).toPromise();
-      this.logTypes = response.logGroups;
+      this.logGroups = response.logGroups;
     } catch (error) {
       console.error('Error loading AWS log groups:', error);
+    }
+  }
+
+  private async getAndSetCredentials() {
+    try {
+      const credentials = await this.apiService.getPlatformCredentials(this.platform).toPromise();
+      console.log('Credentials:', credentials);
+      if (credentials) {
+        this.credentialsForm.patchValue(credentials);
+      }
+    } catch (error) {
+      console.error('Error getting platform credentials:', error);
     }
   }
 
@@ -181,8 +201,8 @@ export class PlatformCredentialsComponent implements OnInit {
     
     if (this.platform === 'aws') {
       return {
-        access_key_id: formValue.accessKeyId,
-        secret_access_key: formValue.secretAccessKey,
+        access_key: formValue.accessKeyId,
+        secret_key: formValue.secretAccessKey,
         region: formValue.region,
         path: formValue.selectedLogGroups
       };
