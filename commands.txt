@@ -1,0 +1,21 @@
+run the migrations
+alembic revision --autogenerate -m Initial -migration
+alembic stamp head
+alembic revision --autogenerate -m Reset -migrations
+alembic upgrade head
+
+uvicorn app.main:app --reload # run the app
+
+
+STARTING THE FRONT END
+INSTALLING angular...
+npm install -g @angular/cli
+ng new my-angular-app
+cd my-angular-app
+ng serve
+
+npm install
+
+ng serve
+
+
