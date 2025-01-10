@@ -47,8 +47,7 @@ class CloudWatchLogsReader:
     ) -> Iterator[LogEvent]:
         """Retrieve log events from CloudWatch."""
         params = {
-            'logGroupName': log_group_name,
-            'startFromHead': True
+            'logGroupName': log_group_name
         }
         
         if start_time:

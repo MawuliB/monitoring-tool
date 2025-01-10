@@ -1,6 +1,9 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ApiService } from '../../services/api.service';
+import { Subject } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 @Component({
   selector: 'app-log-filter',
@@ -31,6 +34,24 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
             <option value="WARN">Warn</option>
             <option value="ERROR">Error</option>
             <option value="DEBUG">Debug</option>
+          </select>
+        </div>
+
+        <div class="filter-group" *ngIf="platform === 'aws'">
+          <label>Log Group</label>
+          <select formControlName="logGroup">
+            <option *ngFor="let group of logGroups" [value]="group.name">
+              {{group.name}}
+            </option>
+          </select>
+        </div>
+
+        <div class="filter-group" *ngIf="platform === 'local'">
+          <label>Log Type</label>
+          <select formControlName="logType">
+            <option *ngFor="let type of logTypes" [value]="type">
+              {{type}}
+            </option>
           </select>
         </div>
       </div>
@@ -108,21 +129,52 @@ import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
   `]
 })
 export class LogFilterComponent {
+  @Input() platform: string = '';
   @Output() filterChange = new EventEmitter<any>();
+  logGroups: any[] = [];
+  logTypes: string[] = [];
   filterForm: FormGroup;
+  private keywordSubject = new Subject<string>();
 
-  constructor(private readonly fb: FormBuilder) {
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly apiService: ApiService
+  ) {
     this.filterForm = this.fb.group({
       keyword: [''],
       startDate: [''],
       endDate: [''],
-      level: ['']
+      level: [''],
+      logGroup: [''],
+      logType: ['']
+    });
+
+    this.keywordSubject.pipe(debounceTime(2000)).subscribe(keyword => {
+      this.filterChange.emit({ keyword });
     });
 
     // Emit changes whenever any form control changes
     this.filterForm.valueChanges.subscribe(value => {
       this.filterChange.emit(this.cleanFilters(value));
     });
+  }
+
+  ngOnInit() {
+    if (this.platform === 'aws') {
+      this.loadAwsLogGroups();
+    }else if (this.platform === 'local') {
+      this.LoadLocalLogTypes();
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['platform'] && !changes['platform'].firstChange) {
+      if (this.platform === 'aws') {
+        this.loadAwsLogGroups();
+      }else if (this.platform === 'local') {
+        this.LoadLocalLogTypes();
+      }
+    }
   }
 
   onSubmit() {
@@ -132,6 +184,24 @@ export class LogFilterComponent {
   resetFilters() {
     this.filterForm.reset();
     this.filterChange.emit({});
+  }
+
+  private async loadAwsLogGroups() {
+    try {
+      const response: any = await this.apiService.getLogGroups(this.platform).toPromise();
+      this.logGroups = response.log_groups;
+    } catch (error) {
+      console.error('Error loading AWS log groups:', error);
+    }
+  }
+
+  private async LoadLocalLogTypes() {
+    try {
+      const response: any = await this.apiService.getLogTypes(this.platform).toPromise();
+      this.logTypes = response.logTypes;
+    } catch (error) {
+      console.error('Error loading local log types:', error);
+    }
   }
 
   private cleanFilters(filters: any) {

@@ -6,7 +6,6 @@ class CredentialCreate(BaseModel):
     access_key: Optional[str] = None
     secret_key: Optional[str] = None
     region: Optional[str] = None
-    path: Optional[str] = None
 
 class CredentialResponse(BaseModel):
     id: int

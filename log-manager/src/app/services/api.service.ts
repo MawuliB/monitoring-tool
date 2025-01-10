@@ -23,6 +23,10 @@ export class ApiService {
     return this.http.get<any[]>(`${this.API_URL}/log-groups?platform=${platform}`);
   }
 
+  getLogTypes(platform: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.API_URL}/log-types/${platform}`);
+  }
+
   getLogs(platform: string, startTime?: string, endTime?: string, logGroups?: string[], logType?: string): Observable<any> {
     let url = `${this.API_URL}/logs?platform=${platform}`;
     if (startTime) url += `&start_time=${startTime}`;
@@ -34,9 +38,5 @@ export class ApiService {
     }
     if (logType) url += `&log_type=${encodeURIComponent(logType)}`;
     return this.http.get(url);
-  }
-
-  getPlatforms(): Observable<any> {
-    return this.http.get<any>(`${this.API_URL}/platforms`);
   }
 }

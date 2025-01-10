@@ -16,6 +16,7 @@ import { CommonModule } from '@angular/common';
         <section class="credentials-section">
           <h2>Platform Credentials</h2>
           <app-platform-credentials
+          (credentialsSaved)="onCredentialsSaved($event)"
             [platform]="selectedPlatform"
           ></app-platform-credentials>
         </section>
@@ -23,7 +24,8 @@ import { CommonModule } from '@angular/common';
         <section class="logs-section">
           <h2>Logs</h2>
           <app-log-viewer
-            [platform]="selectedPlatform"
+          [reloadLogGroups]="onCredentialsSaved()"
+          [platform]="selectedPlatform"
           ></app-log-viewer>
         </section>
       </ng-container>
@@ -50,5 +52,13 @@ export class DashboardComponent {
 
   onPlatformSelect(platform: string) {
     this.selectedPlatform = platform;
+  }
+
+  onCredentialsSaved(anything?: any) {
+    return this.setTrue();
+  }
+
+  setTrue() {
+    return true
   }
 }

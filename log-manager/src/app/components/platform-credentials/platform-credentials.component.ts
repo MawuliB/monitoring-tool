@@ -23,31 +23,16 @@ import { ApiService } from '../../services/api.service';
             <label>Region</label>
             <input type="text" formControlName="region" />
           </div>
-
-          <!-- Log Groups Selection -->
-          <div class="form-group" *ngIf="logGroups.length > 0">
-            <label>Log Groups</label>
-            <select formControlName="selectedLogGroups" class="form-control">
-              <option *ngFor="let group of logGroups" [value]="group">
-                {{ group }}
-              </option>
-            </select>
-            <!-- <small class="text-muted">Hold Ctrl/Cmd to select multiple groups</small> -->
-          </div>
         </ng-container>
 
         <ng-container *ngIf="platform === 'local'">
-          <div class="form-group">
-            <label>Log Type</label>
-            <select formControlName="logType" class="form-control">
-              <option *ngFor="let type of logTypes" [value]="type">
-                {{ type }}
-              </option>
-            </select>
-          </div>
+          <h3>No Credentials Required</h3>
+          <p class="text-muted">
+            No credentials are required for local platform.
+          </p>
         </ng-container>
 
-        <button type="submit" [disabled]="!credentialsForm.valid || loading">
+        <button type="submit" [disabled]="!credentialsForm.valid || loading" *ngIf="platform !== 'local'">
           {{ loading ? 'Saving...' : 'Save Credentials' }}
         </button>
       </form>
@@ -96,12 +81,10 @@ import { ApiService } from '../../services/api.service';
 })
 export class PlatformCredentialsComponent implements OnInit {
   @Input() platform: string = '';
-  @Output() credentialsSaved = new EventEmitter<void>();
+  @Output() credentialsSaved = new EventEmitter<any>();
   
   credentialsForm: FormGroup;
   loading = false;
-  logTypes: string[] = [];
-  logGroups: string[] = [];
   platformConfig: any;
 
   constructor(
@@ -112,38 +95,30 @@ export class PlatformCredentialsComponent implements OnInit {
       accessKeyId: [''],
       secretAccessKey: [''],
       region: [''],
-      logType: [''],
-      selectedLogGroups: ['']
     });
   }
 
   ngOnInit() {
     if (this.platform) {
-      this.loadPlatformConfig();
+      this.loadPlatformCredentials();
     }
   }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['platform'] && !changes['platform'].firstChange) {
-      this.loadPlatformConfig();
+      this.loadPlatformCredentials();
     }
   }
 
-  private async loadPlatformConfig() {
+  private async loadPlatformCredentials() {
     try {
-      const response = await this.apiService.getPlatforms().toPromise();
-      this.platformConfig = response.platforms.find((p: any) => p.id === this.platform);
-      
-      if (this.platform === 'local') {
-        this.logTypes = this.platformConfig.logTypes;
-        this.updateFormValidation(false);
-      } else if (this.platform === 'aws') {
+      if(this.platform === 'aws') {
         this.updateFormValidation(true);
-        this.loadAwsLogGroups();
         this.getAndSetCredentials();
       }
-    } catch (error) {
-      console.error('Error loading platform config:', error);
+    }
+    catch (error) {
+      console.error('Error loading platform credentials:', error);
     }
   }
 
@@ -160,19 +135,12 @@ export class PlatformCredentialsComponent implements OnInit {
     this.credentialsForm.updateValueAndValidity();
   }
 
-  private async loadAwsLogGroups() {
-    try {
-      const response: any = await this.apiService.getLogGroups(this.platform).toPromise();
-      this.logGroups = response.logGroups;
-    } catch (error) {
-      console.error('Error loading AWS log groups:', error);
-    }
-  }
-
   private async getAndSetCredentials() {
     try {
       const credentials = await this.apiService.getPlatformCredentials(this.platform).toPromise();
-      console.log('Credentials:', credentials);
+      // change field names of the credentials
+      credentials['accessKeyId'] = credentials['access_key'];
+      credentials['secretAccessKey'] = credentials['secret_key'];
       if (credentials) {
         this.credentialsForm.patchValue(credentials);
       }
@@ -203,12 +171,7 @@ export class PlatformCredentialsComponent implements OnInit {
       return {
         access_key: formValue.accessKeyId,
         secret_key: formValue.secretAccessKey,
-        region: formValue.region,
-        path: formValue.selectedLogGroups
-      };
-    } else if (this.platform === 'local') {
-      return {
-        path: formValue.logType
+        region: formValue.region
       };
     }
     

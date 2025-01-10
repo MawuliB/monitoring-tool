@@ -3,6 +3,8 @@ from ..cloud import CloudWatchLogsReader
 
 class AWSPlatform(LogPlatform):
     async def get_logs(self, credentials, start_time, end_time, filters):
+        print(filters, credentials)
+
         if not filters.get('log_group'):
             raise ValueError("log_group is required")
             
@@ -18,18 +20,19 @@ class AWSPlatform(LogPlatform):
             end_time=end_time,
             filter_pattern=filters.get('pattern')
         )
+        print(logs)
         
         return [
             {
                 'timestamp': log.timestamp.isoformat(),
                 'message': log.message,
-                'source': log.log_stream,
+                'source': 'aws',
                 'level': log.level
             } for log in logs
         ]
 
     async def get_log_groups(self, credentials):
-        print(credentials)
+        print("credentials at log groups", credentials)
         reader = CloudWatchLogsReader(
             region_name=credentials['region'],
             aws_access_key=credentials['access_key'],

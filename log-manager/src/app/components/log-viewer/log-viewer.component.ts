@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogService } from '../../services/log.service';
 import { LogEntry } from '../../models/log.model';
@@ -12,6 +12,9 @@ interface LogFilter {
   level?: string;
   source?: string;
   platform?: string | null;
+  logType?: string | null;
+  logGroup?: string | null; 
+  keyword?: string | null;
   [key: string]: any;
 }
 
@@ -26,7 +29,7 @@ interface LogFilter {
   ],
   template: `
     <div class="log-viewer">
-      <app-log-filter (filterChange)="setFilters($event)"></app-log-filter>
+      <app-log-filter (filterChange)="setFilters($event)" [platform]="platform"></app-log-filter>
       <div class="view-controls">
         <button 
           (click)="setView('table')"
@@ -118,7 +121,9 @@ interface LogFilter {
   `]
 })
 export class LogViewerComponent implements OnInit {
-  @Input() platform: string | null = null;
+  @Input() platform: string = '';
+  @Input() reloadLogGroups: boolean = false;
+
   logs: LogEntry[] = [];
   filters: LogFilter = {};
   view: 'table' | 'visual' = 'table';
@@ -130,6 +135,16 @@ export class LogViewerComponent implements OnInit {
   pageSize = 50;
   
   constructor(private readonly logService: LogService) {}
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['reloadLogGroups']) {
+      if (!changes['reloadLogGroups'].firstChange) return;
+      if (this.platform === 'aws') {
+      this.loadLogs();
+      this.reloadLogGroups = false;
+      }
+    }
+  }
 
   get totalPages(): number {
     return Math.ceil(this.logs.length / this.pageSize);
@@ -151,13 +166,14 @@ export class LogViewerComponent implements OnInit {
       // Default to last hour if no dates are selected
       const now = new Date().toISOString();
       const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-      console.log(this.filters);
+      if(this.platform === 'aws' && !this.filters.logGroup) return;
       this.logs = await this.logService.fetchLogs(
         this.platform,
         this.filters.startDate ?? oneHourAgo,
         this.filters.endDate ?? now,
         this.filters['logType'] ?? '',
         this.filters['level'] ?? '',
+        this.filters['logGroup'] ?? '',
         this.filters['keyword'] ?? ''
       );
       

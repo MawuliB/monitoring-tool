@@ -10,13 +10,14 @@ export class LogService {
 
   constructor(private readonly http: HttpClient) {}
 
-  async  fetchLogs(platform: string, start_time: string, end_time: string, log_type: string, log_level: string, keyword: string): Promise<any[]> {
+  async  fetchLogs(platform: string, start_time: string, end_time: string, log_type: string, log_level: string, log_group: string, keyword: string): Promise<any[]> {
     const filters = {
       platform,
       start_time,
       end_time,
       log_type,
       log_level,
+      log_group,
       keyword
     };
     try {

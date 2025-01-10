@@ -96,12 +96,6 @@ async def get_credentials(
     """Get credentials for a specific platform"""
     return await credential_service.get_credentials(db, platform, current_user.id)
 
-@app.get("/platforms")
-async def get_platforms():
-    """Get list of available platforms with their configurations."""
-    from .services.platform_service import get_available_platforms
-    return {"platforms": get_available_platforms()}
-
 @app.get("/log-types/{platform}")
 async def get_log_types(platform: str):
     """Get available log types for a platform."""
@@ -116,10 +110,7 @@ async def get_log_groups(
 ):
     """Get available log groups for the specified platform."""
     try:
-        if platform == "local": # not neccessary
-            platform_instance = LocalPlatform()
-            log_groups = await platform_instance.get_log_groups({})
-        elif platform == "aws":
+        if platform == "aws":
             credential = db.query(credentials.Credential).filter(
                 credentials.Credential.user_id == current_user.id,
                 credentials.Credential.platform == platform
@@ -128,7 +119,7 @@ async def get_log_groups(
             if not credential:
                 raise HTTPException(status_code=404, detail="Credentials not found")
             
-            platform_instance = await platform_service.get_user_platform(db, current_user.id, platform)
+            platform_instance = await platform_service.get_user_platform(platform)
             if not platform_instance:
                 raise HTTPException(status_code=404, detail="Platform not configured")
                 
@@ -136,6 +127,7 @@ async def get_log_groups(
         
         return {"log_groups": log_groups}
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/logs")
@@ -144,6 +136,7 @@ async def get_logs(
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
     log_type: Optional[str] = None,
+    log_group: Optional[str] = None,
     log_level: Optional[str] = None,
     keyword: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -151,30 +144,18 @@ async def get_logs(
 ):
     """Get all logs for the specified platform and filters."""
     try:
-        platform_instance = await platform_service.get_user_platform(db, current_user.id, platform)
+        platform_instance = await platform_service.get_user_platform(platform)
         if not platform_instance:
             raise HTTPException(status_code=404, detail="Platform not configured")
 
         # Initialize filters
         filters = {}
-        
-        # get Id of user and use that to get Credential and get the log_type from path
-        user_id = current_user.id
-        credential = db.query(credentials.Credential).filter(
-            credentials.Credential.user_id == user_id,
-            credentials.Credential.platform == platform
-        ).first()
-        
-        if not credential:
-            raise HTTPException(status_code=404, detail="Credentials not found")
-        
-        log_type: CredentialCreate = credential.get_credentials()
 
-        if log_type:
-            if platform == "local":
-                filters["path"] = f"/var/log/{local_log_dict[log_type['path']]}"
-            else:
-                filters["log_groups"] = [log_type["path"]]
+        if log_type and platform == "local":
+            filters["path"] = f"/var/log/{local_log_dict[log_type]}"
+
+        if log_group and platform == "aws":
+            filters["log_group"] = log_group
 
         if log_level:
             filters["level"] = log_level
@@ -182,10 +163,11 @@ async def get_logs(
         if keyword:
             filters["keyword"] = keyword
 
-        print(filters)
-
         logs = await platform_instance.get_logs(
-            credentials={"path": filters.get("path", "/var/log/syslog")} if platform == "local" else credentials.get_credentials(),
+            credentials={"path": filters.get("path", "/var/log/syslog")} if platform == "local" else db.query(credentials.Credential).filter(
+                credentials.Credential.user_id == current_user.id,
+                credentials.Credential.platform == platform
+            ).first().get_credentials(),
             start_time=start_time or datetime.now() - timedelta(hours=1),
             end_time=end_time or datetime.now(),
             filters=filters
