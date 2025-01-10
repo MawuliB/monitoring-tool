@@ -1,10 +1,10 @@
+uvicorn app.main:app --reload # run the app
+
 run the migrations
 alembic revision --autogenerate -m Initial -migration
 alembic stamp head
 alembic revision --autogenerate -m Reset -migrations
 alembic upgrade head
-
-uvicorn app.main:app --reload # run the app
 
 
 STARTING THE FRONT END
