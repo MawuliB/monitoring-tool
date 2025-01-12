@@ -92,3 +92,4 @@ class CloudWatchLogsReader:
             return log_groups
         except ClientError as e:
             raise Exception(f"Failed to fetch log groups: {str(e)}")
+        
