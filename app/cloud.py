@@ -119,3 +119,4 @@ class CloudWatchLogsReader:
                 last_timestamp = max(event.timestamp for event in new_events)
             
             await asyncio.sleep(interval)
+        
