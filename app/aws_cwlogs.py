@@ -1,39 +1,3 @@
-# import os
-# import boto3
-# import datetime
-
-# log_group_name = 'app.log'
-# log_stream_name = 'i-01071eb2724f085ec'
-
-# # first type
-# client = boto3.client('logs',
-#                       region_name='eu-west-2',
-#                       aws_access_key_id=os.getenv('ACCESS_KEYS'),
-#                       aws_secret_access_key=os.getenv('SECRET_KEYS')
-#                       )
-
-
-# current_time = int(datetime.now().timestamp() * 1000)
-
-# response = client.read_log(
-#     logGroupName=log_group_name,
-#     logStreamName=log_stream_name ,
-#     logEvents=[
-#         {
-#             'timestamp': 1609459200000,
-#             'message': 'Log message 1 tests'
-#         },
-       
-#     ]
-# )
-
-# print(response)
-
-# request = client.retrive_log_events(
-#     log_stream_name=log_stream_name,
-#     log_stream_name=log_stream_name,
-#     start_time=1609459200000,)
-
 # NEW FIX
 import os
 import boto3
