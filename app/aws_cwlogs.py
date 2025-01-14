@@ -130,19 +130,19 @@ def fetch_logs_by_level(log_level):
         return []
     
     
-# GET LOGS BY LEVEL
-@app.route('/logs/level', methods=['GET'])
-def get_logs_by_level():
-    log_level = request.args.get('log_level')
-    logs = fetch_logs_by_level(log_level)
-    formatted_logs = [
-        {
-            'timestamp': datetime.fromtimestamp(event['timestamp'] / 1000).isoformat(),
-            'message': event['message'],
-        }
-        for event in logs
-    ]
-    return jsonify({'logs': formatted_logs})
+# # GET LOGS BY LEVEL
+# @app.route('/logs/level', methods=['GET'])
+# def get_logs_by_level():
+#     log_level = request.args.get('log_level')
+#     logs = fetch_logs_by_level(log_level)
+#     formatted_logs = [
+#         {
+#             'timestamp': datetime.fromtimestamp(event['timestamp'] / 1000).isoformat(),
+#             'message': event['message'],
+#         }
+#         for event in logs
+#     ]
+#     return jsonify({'logs': formatted_logs})
 
 # NEW FIX
 @app.route('/log_level', methods=['GET'])
