@@ -19,3 +19,14 @@ npm install
 ng serve
 
 
+
+
+ TO DO 
+ DELETE THE SERVICES CREATED
+
+ RECREATE THEM FROM SCRATCH WHEN READY TO DEMONSTRATE
+ user Video
+
+ 1. created log group and log stream '
+ 2. installed cloud-watch-agent and configure Iterator
+ 
