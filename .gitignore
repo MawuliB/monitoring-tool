@@ -4,3 +4,4 @@ env/
 reports/
 __pycache__/
 *.db
+Dockerfile

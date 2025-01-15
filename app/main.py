@@ -1,11 +1,15 @@
+import json
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uvicorn
 from datetime import datetime, timedelta
 from fastapi import Query
+
+from app.platforms.aws import AWSPlatform
 
 from .database import get_db, engine
 from .models import credentials, logs, users
@@ -40,6 +44,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 @app.post("/register", response_model=User)
 async def register_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -179,6 +189,34 @@ async def get_logs(
 
     except Exception as e:
         print(e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/logs/tail/aws")
+async def tail_logs(
+    log_group_name: str, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+    ):
+    credential = db.query(credentials.Credential).filter(
+        credentials.Credential.user_id == current_user.id,
+        credentials.Credential.platform == "aws"
+    ).first().get_credentials()
+    aws_platform = AWSPlatform()
+    try:
+        async def event_stream():
+            async for log_event in aws_platform.tail_logs(credential, log_group_name):
+                yield f"data: {json.dumps(log_event.__dict__, cls=DateTimeEncoder)}\n\n"
+
+        return StreamingResponse(event_stream(), 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache", 
+            "X-Accel-Buffering": "no", 
+            "Connection": "keep-alive"
+            }
+        )
+    except Exception as e:
+        print("Error while tailing logs:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

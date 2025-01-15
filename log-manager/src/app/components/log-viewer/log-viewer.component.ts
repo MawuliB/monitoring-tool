@@ -5,6 +5,7 @@ import { LogEntry } from '../../models/log.model';
 import { LogFilterComponent } from '../log-filter/log-filter.component';
 import { LogTableComponent } from '../log-table/log-table.component';
 import { LogVisualizationsComponent } from '../log-visualizations/log-visualizations.component';
+import { Subscription } from 'rxjs';
 
 interface LogFilter {
   startDate?: string;
@@ -39,6 +40,10 @@ interface LogFilter {
           (click)="setView('visual')"
           [class.active]="view === 'visual'"
         >Visual View</button>
+        <button 
+          (click)="toggleLogTailing()"
+          [class.active]="isTailingLogs"
+        >{{ isTailingLogs ? 'Stop Tailing' : 'Start Tailing' }}</button>
       </div>
       
       <div class="content-area">
@@ -61,7 +66,11 @@ interface LogFilter {
             [logs]="logs"
           ></app-log-visualizations>
 
-          <div *ngIf="view === 'table'" class="pagination">
+          <div *ngIf="view === 'table' && !isTailingLogs" class="pagination">
+            <button 
+              [disabled]="currentPage === 1"
+              (click)="setPage(1)"
+            >&#171;</button>
             <button 
               [disabled]="currentPage === 1"
               (click)="setPage(currentPage - 1)"
@@ -71,6 +80,10 @@ interface LogFilter {
               [disabled]="currentPage === totalPages"
               (click)="setPage(currentPage + 1)"
             >Next</button>
+            <button 
+              [disabled]="currentPage === totalPages"
+              (click)="setPage(totalPages)"
+            >&#187;</button>
           </div>
         </ng-container>
       </div>
@@ -121,6 +134,7 @@ interface LogFilter {
   `]
 })
 export class LogViewerComponent implements OnInit {
+  private subscription: Subscription | undefined;
   @Input() platform: string = '';
   @Input() reloadLogGroups: boolean = false;
 
@@ -129,12 +143,16 @@ export class LogViewerComponent implements OnInit {
   view: 'table' | 'visual' = 'table';
   loading = false;
   error: string | null = null;
+  isTailingLogs: boolean = false;
+  logGroupName: string | null | undefined = undefined;
 
   // Pagination state
   currentPage = 1;
   pageSize = 50;
   
-  constructor(private readonly logService: LogService) {}
+  constructor(
+    private readonly logService: LogService
+  ) {}
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['reloadLogGroups']) {
@@ -157,7 +175,7 @@ export class LogViewerComponent implements OnInit {
   }
 
   async loadLogs() {
-    if (!this.platform) return;
+    if (!this.platform || this.isTailingLogs) return;
     
     try {
       this.loading = true;
@@ -193,6 +211,7 @@ export class LogViewerComponent implements OnInit {
 
   setFilters(filters: LogFilter) {
     this.filters = filters;
+    this.logGroupName = filters.logGroup ?? null; // Assign null if undefined
     this.loadLogs();
   }
 
@@ -204,5 +223,51 @@ export class LogViewerComponent implements OnInit {
     if (page >= 1 && page <= this.totalPages) {
       this.currentPage = page;
     }
+  }
+
+  toggleLogTailing() {
+    this.isTailingLogs = !this.isTailingLogs;
+    if (this.platform === 'aws') {
+      if (this.isTailingLogs && this.logGroupName) {
+      this.startTailingLogs();
+    } else {
+      this.stopTailingLogs();
+    }
+  } else if (this.platform === 'local') {
+    console.warn('Local logs cannot be tailing.');
+  }
+  }
+
+  startTailingLogs() {
+    if (this.logGroupName) {
+      this.subscription = this.logService.tailLogs(this.logGroupName).subscribe({
+        next: (logEvent) => {
+          if (!this.logs) {
+            this.logs = [];
+          }
+          this.logs = [...this.logs, logEvent];
+        },
+        error: (error) => {
+          console.error('Component error:', error);
+        },
+        complete: () => {
+          console.log('Stream completed');
+        }
+      });
+    } else {
+      console.warn('Log group name is not defined.');
+    }
+  }
+  
+  stopTailingLogs() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+      console.log('Stopped tailing logs');
+    }
+  }
+
+  // Always clean up when component is destroyed
+  ngOnDestroy() {
+    this.stopTailingLogs();
   }
 }

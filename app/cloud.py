@@ -1,9 +1,11 @@
+import typing
 import boto3
 from botocore.exceptions import ClientError
 from datetime import datetime, timedelta
 import time
-from typing import Iterator, Dict, List, Optional, Union
+from typing import Iterator, Dict, List, Optional, Union, AsyncGenerator
 from dataclasses import dataclass
+import asyncio
 
 @dataclass
 class LogEvent:
@@ -92,3 +94,28 @@ class CloudWatchLogsReader:
             return log_groups
         except ClientError as e:
             raise Exception(f"Failed to fetch log groups: {str(e)}")
+
+
+    async def tail_logs(
+        self,
+        log_group_name: str,
+        interval: int = 5,
+        filter_pattern: Optional[str] = None
+    ) -> AsyncGenerator[LogEvent, None]:
+        """Continuously tail logs from CloudWatch (similar to 'tail -f')."""
+        last_timestamp = datetime.now() - timedelta(weeks=52)
+        
+        while True:
+            events = list(self.get_log_events(
+                log_group_name=log_group_name,
+                start_time=last_timestamp,
+                filter_pattern=filter_pattern
+            ))
+            new_events = [event for event in events if event.timestamp > last_timestamp]
+            
+            if new_events:
+                for event in new_events:
+                    yield event
+                last_timestamp = max(event.timestamp for event in new_events)
+            
+            await asyncio.sleep(interval)

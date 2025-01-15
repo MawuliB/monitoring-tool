@@ -1,0 +1,19 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - "/var/log:/var/log:ro"
+      - "/mnt:/mnt:ro"
+    image: mawulib/monitor-backend:latest
+
+  log-manager:
+    build:
+      context: ./log-manager
+      dockerfile: Dockerfile
+    ports:
+      - "4200:4200"
+    image: mawulib/monitor-frontend:latest
