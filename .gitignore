@@ -4,3 +4,6 @@ env/
 reports/
 __pycache__/
 *.db
+# max env data
+.env
+logenv/

@@ -21,8 +21,7 @@ class CloudWatchLogsReader:
         session = boto3.Session(
             aws_access_key_id=aws_access_key,
             aws_secret_access_key=aws_secret_key,
-            region_name=region_name
-        )
+            region_name=region_name)
         self.client = session.client('logs')
         
     def _parse_log_level(self, message: str) -> str:
@@ -92,3 +91,4 @@ class CloudWatchLogsReader:
             return log_groups
         except ClientError as e:
             raise Exception(f"Failed to fetch log groups: {str(e)}")
+        
