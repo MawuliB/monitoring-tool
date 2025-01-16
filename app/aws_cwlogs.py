@@ -75,7 +75,7 @@ def fetch_logs_by_level(log_level):
             logGroupName=LOG_GROUP_NAME,
             logStreamName=LOG_STREAM_NAME,
             filterPattern=log_level if log_level else 'INFO'
-            # startFromHead=True,
+#            # startFromHead=True,
         #     startTime=logs[0]['timestamp'],
         #     endTime=logs[-1]['timestamp'],
         #     filterPattern=f'[{level}]'
@@ -130,3 +130,8 @@ def get_logs_level():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5050)
+
+
+# add log level to also filter by time and log level
+# a file path that contains the logs and reads the file to get the logs
+# eg. 
