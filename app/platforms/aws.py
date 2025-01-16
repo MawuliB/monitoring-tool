@@ -18,7 +18,7 @@ class AWSPlatform(LogPlatform):
             log_group_name=filters['log_group'],
             start_time=start_time,
             end_time=end_time,
-            filter_pattern=filters.get('pattern')
+            filter_pattern=filters.get('level')
         )
         
         return [

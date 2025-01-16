@@ -34,6 +34,10 @@ class PlatformService:
     }
 
     @staticmethod
+    async def get_log_levels() -> List[str]:
+        return ["debug", "info", "warn", "error"]
+
+    @staticmethod
     async def get_user_platform(platform: str):
         """Get the platform instance for a user based on their stored credentials."""
         if platform == "aws":

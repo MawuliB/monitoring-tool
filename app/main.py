@@ -30,6 +30,7 @@ credentials.Base.metadata.create_all(bind=engine)
 platform_service = platform_service.PlatformService()
 
 local_log_dict = platform_service.get_system_logs()
+log_levels = platform_service.get_log_levels()
 
 app = FastAPI(title="Log Management System")
 
@@ -164,7 +165,7 @@ async def get_logs(
         if log_group and platform == "aws":
             filters["log_group"] = log_group
 
-        if log_level:
+        if log_level and log_level.lower() in log_levels:
             filters["level"] = log_level
 
         if keyword:
