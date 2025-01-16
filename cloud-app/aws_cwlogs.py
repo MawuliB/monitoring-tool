@@ -6,6 +6,9 @@ from flask import Flask, jsonify, request
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
+# EC2 logs query configs
+import paramiko
+
 load_dotenv()
 
 # Flask app initialization
@@ -15,10 +18,15 @@ app = Flask(__name__)
 AWS_REGION = 'eu-west-2'
 AWS_ACCESS_KEY = os.getenv('ACCESS_KEYS')
 AWS_SECRET_KEY = os.getenv('SECRET_KEYS')
+EC2_KEY_PATH=os.getenv('EC2_KEY_PATH')
+EC2_HOST=os.getenv('EC2_HOST')
+EC2_USER=os.getenv('EC2_USER')
 
 # CloudWatch log group and stream names
 LOG_GROUP_NAME = 'app.log'
 LOG_STREAM_NAME = 'i-01071eb2724f085ec'
+
+
 
 # Boto3 client for CloudWatch
 client = boto3.client(
@@ -114,41 +122,37 @@ def get_logs_level():
         return jsonify({"error": str(e)}), 500
     
 
-
-@app.route('/logs', methods=['GET'])
+# Dynamic file path configs
+@app.route('/logs/path', methods=['GET'])
 def get_logs_by_path():
     try:
         # Fetch query parameters
-        log_group_name = request.args.get(LOG_GROUP_NAME)
-        log_stream_name = request.args.get(LOG_STREAM_NAME)
+        file_path = request.args.get('file_path')
 
         # Validate required parameters
-        if not log_group_name or not log_stream_name or not start_time or not end_time:
-            return jsonify({'error': 'Missing required parameters: log_group_name, log_stream_name.'}), 400
+        if not file_path:
+            return jsonify({'error': 'Missing required parameter: file_path.'}), 400
 
-        # Convert start and end time to timestamps
-        now = datetime.now()
-        one_hour_before = now - timedelta(hours=1)
-        
-        start_time = datetime.fromisoformat(one_hour_before.timestamp() * 1000)
-        end_time = datetime.fromisoformat(now.timestamp() * 1000)
+        # SSH into the EC2 instance
+        key = paramiko.RSAKey.from_private_key_file(EC2_KEY_PATH)
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(hostname=EC2_HOST, username=EC2_USER, pkey=key)
 
-        # Fetch logs from CloudWatch
-        response = client.filter_log_events(
-            logGroupName=log_group_name,
-            logStreamNames=[log_stream_name],
-            startTime=start_time,
-            endTime=end_time
-        )
-        
+        # Read the specified log file
+        stdin, stdout, stderr = ssh.exec_command(f'cat {file_path}')
+        log_contents = stdout.read().decode('utf-8')
+        ssh.close()
+
         # Process logs
-        events = response.get("events", [])
-        logs = [{"timestamp": datetime.fromtimestamp(e["timestamp"] / 1000).isoformat(), "message": e["message"]} for e in events]
+        logs = log_contents.splitlines()
+        log_entries = [{"line": i + 1, "message": log} for i, log in enumerate(logs)]
 
-        return jsonify({"logs": logs})
+        return jsonify({"logs": log_entries})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == '__main__':

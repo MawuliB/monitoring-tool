@@ -14,3 +14,4 @@ package-lock.json
 logs.db
 logs.db-journal
 logs.json
+cloud-app/agent1-key.pem
