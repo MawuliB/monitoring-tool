@@ -1,6 +1,6 @@
 env/
 .env
-*.json
+# *.json
 reports/
 __pycache__/
 *.db
