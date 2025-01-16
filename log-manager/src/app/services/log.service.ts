@@ -37,13 +37,22 @@ export class LogService {
     }
   }
 
-  tailLogs(logGroupName: string): Observable<any> {
+  getTailingUrl(logGroupName: string, platform: string, logType: string) {
+    if (platform === 'aws') {
+      return `${this.API_URL}/logs/tail/${platform}?log_group_name=${logGroupName}`;
+    } else {
+      return `${this.API_URL}/logs/tail/${platform}?log_type=${logType}`;
+    }
+  }
+
+  tailLogs(logGroupName: string, platform: string, logType: string): Observable<any> {
     const token = this.authService.getToken();
+    const url = this.getTailingUrl(logGroupName, platform, logType);
     return new Observable(observer => {
       console.log('Starting EventSource connection...');
       
       const eventSource = new EventSourcePolyfill(
-        `${this.API_URL}/logs/tail/aws?log_group_name=${logGroupName}`,
+        url,
         {
           headers: {
             Authorization: `Bearer ${token}`

@@ -144,7 +144,8 @@ export class LogViewerComponent implements OnInit {
   loading = false;
   error: string | null = null;
   isTailingLogs: boolean = false;
-  logGroupName: string | null | undefined = undefined;
+  logGroupName: string = '';
+  logType: string = 'syslog';
 
   // Pagination state
   currentPage = 1;
@@ -211,7 +212,8 @@ export class LogViewerComponent implements OnInit {
 
   setFilters(filters: LogFilter) {
     this.filters = filters;
-    this.logGroupName = filters.logGroup ?? null; // Assign null if undefined
+    this.logGroupName = filters.logGroup ?? ''; // Assign null if undefined
+    this.logType = filters.logType ?? '';
     this.loadLogs();
   }
 
@@ -234,13 +236,23 @@ export class LogViewerComponent implements OnInit {
       this.stopTailingLogs();
     }
   } else if (this.platform === 'local') {
-    console.warn('Local logs cannot be tailing.');
+    if (this.isTailingLogs && this.logType) {
+      this.startTailingLogs();
+    } else {
+      this.stopTailingLogs();
+    }
   }
   }
 
   startTailingLogs() {
-    if (this.logGroupName) {
-      this.subscription = this.logService.tailLogs(this.logGroupName).subscribe({
+    if (this.platform) {
+      if (
+        (this.platform === 'aws' && !this.logGroupName.trim()) || 
+        (this.platform === 'local' && !this.logType.trim())
+      ) {
+        return;
+      }      
+      this.subscription = this.logService.tailLogs(this.logGroupName, this.platform, this.logType).subscribe({
         next: (logEvent) => {
           if (!this.logs) {
             this.logs = [];
@@ -255,7 +267,7 @@ export class LogViewerComponent implements OnInit {
         }
       });
     } else {
-      console.warn('Log group name is not defined.');
+      console.warn('platform is not defined.');
     }
   }
   

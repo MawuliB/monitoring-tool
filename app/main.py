@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from fastapi import Query
 
 from app.platforms.aws import AWSPlatform
+from app.platforms.local import LocalPlatform
 
 from .database import get_db, engine
 from .models import credentials, logs, users
@@ -204,6 +205,30 @@ async def tail_logs(
         async def event_stream():
             async for log_event in aws_platform.tail_logs(credential, log_group_name):
                 yield f"data: {json.dumps(log_event.__dict__, cls=DateTimeEncoder)}\n\n"
+
+        return StreamingResponse(event_stream(), 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache", 
+            "X-Accel-Buffering": "no", 
+            "Connection": "keep-alive"
+            }
+        )
+    except Exception as e:
+        print("Error while tailing logs:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/logs/tail/local")
+async def tail_logs(
+    log_type: str,
+):
+    local_platform = LocalPlatform()
+    try:
+        async def event_stream():
+            async for log_event in local_platform.tail_logs(
+                credentials={"path": local_log_dict[log_type]}
+                ):
+                yield f"data: {json.dumps(log_event, cls=DateTimeEncoder)}\n\n"
 
         return StreamingResponse(event_stream(), 
         media_type="text/event-stream",

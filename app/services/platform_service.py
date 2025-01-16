@@ -34,7 +34,7 @@ class PlatformService:
     }
 
     @staticmethod
-    async def get_log_levels() -> List[str]:
+    def get_log_levels() -> List[str]:
         return ["debug", "info", "warn", "error"]
 
     @staticmethod

@@ -1,10 +1,50 @@
 from .base import LogPlatform
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import AsyncGenerator, Dict, List, Any
 import re
+import asyncio
+import os
 
 class LocalPlatform(LogPlatform):
+
+    def parse_log_level(self, line: str) -> str:
+            """Parse log level from line. Default to INFO if not found."""
+            line_lower = line.lower()
+            if 'error' in line_lower:
+                return 'ERROR'
+            elif 'warn' in line_lower:
+                return 'WARN'
+            elif 'debug' in line_lower:
+                return 'DEBUG'
+            return 'INFO'
+        
+    def extract_timestamp(self, line: str) -> str:
+        """Extract timestamp from a log line. Default to current time if not found."""
+        timestamp_match = re.search(r'(\w{3})\s+(\d{1,2})\s+(\d{2}:\d{2}:\d{2})', line)
+        if timestamp_match:
+            month_map = {
+                'Jan': '01',
+                'Feb': '02',
+                'Mar': '03',
+                'Apr': '04',
+                'May': '05',
+                'Jun': '06',
+                'Jul': '07',
+                'Aug': '08',
+                'Sep': '09',
+                'Oct': '10',
+                'Nov': '11',
+                'Dec': '12'
+            }
+            month, day, time = timestamp_match.groups()
+            # Ensure the day is zero-padded for consistency
+            day = day.zfill(2)
+            return f"{datetime.now().year}-{month_map[month]}-{day} {time}"
+        
+        # If no timestamp is found, return "N/A"
+        return "N/A"
+        
     async def get_logs(
         self,
         credentials: Dict[str, str],
@@ -18,43 +58,6 @@ class LocalPlatform(LogPlatform):
         start_time = datetime.fromisoformat(start_time.isoformat()).strftime("%Y-%m-%d %H:%M:%S")
         end_time = datetime.fromisoformat(end_time.isoformat()).strftime("%Y-%m-%d %H:%M:%S")
         
-        def parse_log_level(line: str) -> str:
-            """Parse log level from line. Default to INFO if not found."""
-            line_lower = line.lower()
-            if 'error' in line_lower:
-                return 'ERROR'
-            elif 'warn' in line_lower:
-                return 'WARN'
-            elif 'debug' in line_lower:
-                return 'DEBUG'
-            return 'INFO'
-        
-        def extract_timestamp(line: str) -> str:
-            """Extract timestamp from a log line. Default to current time if not found."""
-            timestamp_match = re.search(r'(\w{3})\s+(\d{1,2})\s+(\d{2}:\d{2}:\d{2})', line)
-            if timestamp_match:
-                month_map = {
-                    'Jan': '01',
-                    'Feb': '02',
-                    'Mar': '03',
-                    'Apr': '04',
-                    'May': '05',
-                    'Jun': '06',
-                    'Jul': '07',
-                    'Aug': '08',
-                    'Sep': '09',
-                    'Oct': '10',
-                    'Nov': '11',
-                    'Dec': '12'
-                }
-                month, day, time = timestamp_match.groups()
-                # Ensure the day is zero-padded for consistency
-                day = day.zfill(2)
-                return f"{datetime.now().year}-{month_map[month]}-{day} {time}"
-            
-            # If no timestamp is found, return "N/A"
-            return "N/A"
-        
         try:
             log_path = Path(path)
             if log_path.is_file():
@@ -62,10 +65,10 @@ class LocalPlatform(LogPlatform):
                     for line in f:
                         line = line.strip()
                         log_entry = {
-                            'timestamp': extract_timestamp(line),
+                            'timestamp': self.extract_timestamp(line),
                             'message': line,
                             'source': 'local',
-                            'level': parse_log_level(line)
+                            'level': self.parse_log_level(line)
                         }
                         # Filter by time range
                         log_time = datetime.fromisoformat(log_entry['timestamp']).strftime("%Y-%m-%d %H:%M:%S")
@@ -85,3 +88,27 @@ class LocalPlatform(LogPlatform):
     def validate_credentials(self, credentials: Dict[str, str]) -> bool:
         """Local files don't require credentials."""
         return True
+
+    async def tail_logs(
+        self, 
+        credentials: Dict[str, str]
+        ) -> AsyncGenerator[Dict[str, Any], None]:
+        ''' Tail logs from local files '''
+        path = credentials.get('path', '/var/log/syslog')  # Default path if not specified
+        log_path = Path(path)
+        if log_path.is_file():
+            with open(log_path, 'r') as f:
+                f.seek(0, os.SEEK_END)
+                while True:
+                    line = f.readline()
+                    if not line:
+                        await asyncio.sleep(1)  # Wait for 1 second before checking again
+                        continue
+                    log_entry = {
+                        'timestamp': self.extract_timestamp(line),
+                        'message': line,
+                        'source': 'local',
+                        'level': self.parse_log_level(line)
+                    }
+                    yield log_entry
+                
