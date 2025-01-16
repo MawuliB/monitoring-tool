@@ -146,6 +146,7 @@ def get_logs_by_path():
 
         # Process logs
         logs = log_contents.splitlines()
+        print(logs)
         log_entries = [{"line": i + 1, "message": log} for i, log in enumerate(logs)]
 
         return jsonify({"logs": log_entries})
