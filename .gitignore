@@ -7,3 +7,10 @@ __pycache__/
 # max env data
 .env
 logenv/
+alembic/
+winenv/
+alembic.ini
+package-lock.json
+logs.db
+logs.db-journal
+logs.json

@@ -3,7 +3,7 @@ import os
 import boto3
 import logging
 from flask import Flask, jsonify, request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -94,20 +94,6 @@ def fetch_logs_by_level(log_level):
         return []
     
     
-# # GET LOGS BY LEVEL
-# @app.route('/logs/level', methods=['GET'])
-# def get_logs_by_level():
-#     log_level = request.args.get('log_level')
-#     logs = fetch_logs_by_level(log_level)
-#     formatted_logs = [
-#         {
-#             'timestamp': datetime.fromtimestamp(event['timestamp'] / 1000).isoformat(),
-#             'message': event['message'],
-#         }
-#         for event in logs
-#     ]
-#     return jsonify({'logs': formatted_logs})
-
 # NEW FIX
 @app.route('/log_level', methods=['GET'])
 def get_logs_level():
@@ -124,6 +110,43 @@ def get_logs_level():
             for e in events
         ]
         return jsonify({"logs": logs})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+
+@app.route('/logs', methods=['GET'])
+def get_logs_by_path():
+    try:
+        # Fetch query parameters
+        log_group_name = request.args.get(LOG_GROUP_NAME)
+        log_stream_name = request.args.get(LOG_STREAM_NAME)
+
+        # Validate required parameters
+        if not log_group_name or not log_stream_name or not start_time or not end_time:
+            return jsonify({'error': 'Missing required parameters: log_group_name, log_stream_name.'}), 400
+
+        # Convert start and end time to timestamps
+        now = datetime.now()
+        one_hour_before = now - timedelta(hours=1)
+        
+        start_time = datetime.fromisoformat(one_hour_before.timestamp() * 1000)
+        end_time = datetime.fromisoformat(now.timestamp() * 1000)
+
+        # Fetch logs from CloudWatch
+        response = client.filter_log_events(
+            logGroupName=log_group_name,
+            logStreamNames=[log_stream_name],
+            startTime=start_time,
+            endTime=end_time
+        )
+        
+        # Process logs
+        events = response.get("events", [])
+        logs = [{"timestamp": datetime.fromtimestamp(e["timestamp"] / 1000).isoformat(), "message": e["message"]} for e in events]
+
+        return jsonify({"logs": logs})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
