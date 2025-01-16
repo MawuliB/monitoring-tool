@@ -29,10 +29,7 @@ credentials.Base.metadata.create_all(bind=engine)
 
 platform_service = platform_service.PlatformService()
 
-local_log_dict = {
-    "system": "syslog",
-    "auth": "auth.log"
-}
+local_log_dict = platform_service.get_system_logs()
 
 app = FastAPI(title="Log Management System")
 
@@ -162,7 +159,7 @@ async def get_logs(
         filters = {}
 
         if log_type and platform == "local":
-            filters["path"] = f"/var/log/{local_log_dict[log_type]}"
+            filters["path"] = f"{local_log_dict[log_type]}"
 
         if log_group and platform == "aws":
             filters["log_group"] = log_group

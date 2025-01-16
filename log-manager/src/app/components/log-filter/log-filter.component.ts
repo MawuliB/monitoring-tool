@@ -146,7 +146,7 @@ export class LogFilterComponent {
       endDate: [''],
       level: [''],
       logGroup: [''],
-      logType: ['']
+      logType: ['syslog']
     });
 
     this.keywordSubject.pipe(debounceTime(2000)).subscribe(keyword => {

@@ -144,7 +144,7 @@ class CloudWatchLogsReader:
         Returns:
             Iterator of LogEvent objects
         """
-        last_timestamp = datetime.now() - timedelta(minutes=1)
+        last_timestamp = datetime.now() - timedelta(weeks=52)
         
         while True:
             events = list(self.get_log_events(

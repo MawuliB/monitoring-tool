@@ -3,15 +3,34 @@ from ..models.credentials import Credential
 from ..platforms.aws import AWSPlatform
 from ..platforms.local import LocalPlatform
 from typing import Dict, List, Any
+import os
+import platform
 
 class PlatformService:
+    @staticmethod
+    def get_system_logs():
+        system = platform.system().lower()
+        logs = {}
+
+        if system == "linux":
+            log_dir = "/var/log"
+            for file in os.listdir(log_dir):
+                if file.endswith(".log"):
+                    log_name = file.split(".")[0]
+                    logs[log_name] = os.path.join(log_dir, file)
+            logs["syslog"] = "/var/log/syslog"
+
+        elif system == "windows":
+            log_dir = r"C:\Windows\System32\winevt\Logs"
+            for file in os.listdir(log_dir):
+                if file.endswith(".evtx"):
+                    log_name = file.split(".")[0].lower()
+                    logs[log_name] = os.path.join(log_dir, file)
+
+        return logs
+
     AVAILABLE_LOG_TYPES = {
-        "local": {
-            "system": "/var/log/syslog",
-            "auth": "/var/log/auth.log",
-            "application": "/var/log/application.log",
-            "error": "/var/log/error.log"
-        }
+        "local": get_system_logs()
     }
 
     @staticmethod
