@@ -88,7 +88,7 @@ class LocalPlatform(LogPlatform):
     def validate_credentials(self, credentials: Dict[str, str]) -> bool:
         """Local files don't require credentials."""
         return True
-
+    
     async def tail_logs(
         self, 
         credentials: Dict[str, str]

@@ -1,0 +1,32 @@
+uvicorn app.main:app --reload # run the app
+
+run the migrations
+alembic revision --autogenerate -m Initial -migration
+alembic stamp head
+alembic revision --autogenerate -m Reset -migrations
+alembic upgrade head
+
+
+STARTING THE FRONT END
+INSTALLING angular...
+npm install -g @angular/cli
+ng new my-angular-app
+cd my-angular-app
+ng serve
+
+npm install
+
+ng serve
+
+
+
+
+ TO DO 
+ DELETE THE SERVICES CREATED
+
+ RECREATE THEM FROM SCRATCH WHEN READY TO DEMONSTRATE
+ user Video
+
+ 1. created log group and log stream '
+ 2. installed cloud-watch-agent and configure Iterator
+ 
