@@ -111,7 +111,6 @@ class CloudWatchLogsReader:
                 filter_pattern=filter_pattern
             ))
             new_events = [event for event in events if event.timestamp > last_timestamp]
-            
             if new_events:
                 for event in new_events:
                     yield event

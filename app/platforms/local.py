@@ -89,4 +89,26 @@ class LocalPlatform(LogPlatform):
         """Local files don't require credentials."""
         return True
     
-    
+    async def tail_logs(
+        self, 
+        credentials: Dict[str, str]
+        ) -> AsyncGenerator[Dict[str, Any], None]:
+        ''' Tail logs from local files '''
+        path = credentials.get('path', '/var/log/syslog')  # Default path if not specified
+        log_path = Path(path)
+        if log_path.is_file():
+            with open(log_path, 'r') as f:
+                f.seek(0, os.SEEK_END)
+                while True:
+                    line = f.readline()
+                    if not line:
+                        await asyncio.sleep(1)  # Wait for 1 second before checking again
+                        continue
+                    log_entry = {
+                        'timestamp': self.extract_timestamp(line),
+                        'message': line,
+                        'source': 'local',
+                        'level': self.parse_log_level(line)
+                    }
+                    yield log_entry
+                
