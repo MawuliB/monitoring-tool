@@ -1,0 +1,13 @@
+<button
+  type="button"
+  (click)="closeToast()"
+  [ngClass]="{'show-toast': open, 'hide-toast': !open, 'toast-success': type === 'success', 'toast-error': type === 'error', 'toast-warn': type === 'warn', 'toast-info': type === 'info'}"
+  class="toast"
+>
+  <div class="toast-content">
+    <span class="toast-icon">
+      <i [ngClass]="{'bx bx-check': type === 'success', 'bx bx-x': type === 'error', 'bx bx-warning': type === 'warn', 'bx bx-info-circle': type === 'info'}"></i>
+    </span>
+    <p class="toast-message">{{ message }}</p>
+  </div>
+</button>
