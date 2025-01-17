@@ -105,7 +105,7 @@ interface LogFilter {
     }
 
     .view-controls {
-      margin: 1rem 0;
+      margin: 1rem 1rem;
       display: flex;
       gap: 0.5rem;
     }
