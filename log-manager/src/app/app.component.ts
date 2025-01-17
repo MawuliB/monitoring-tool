@@ -24,6 +24,12 @@ import { CommonModule } from '@angular/common';
   styles: [`
     .app-container {
       padding: 1rem;
+      background: linear-gradient(135deg, #ffffff, #f8f9fa, #faf0e6); 
+      height: 100vh; 
+      margin: 5px; 
+      padding: 5px; 
+      background-repeat: no-repeat; 
+      background-attachment: fixed;
     }
 
     header {

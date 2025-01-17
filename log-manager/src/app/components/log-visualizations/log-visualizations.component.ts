@@ -25,6 +25,9 @@ import { BaseChartDirective } from 'ng2-charts';
         <h3>Summary</h3>
         <p><strong>Error Rate:</strong> {{ calculateErrorRate() }}%</p>
         <p><strong>Most Common Source:</strong> {{ getMostCommonSource() }}</p>
+        <p><strong>Most Common Level:</strong> {{ getMostCommonLevel() }}</p>
+        <p><strong>Total Log Count:</strong> {{ getTotalLogCount() }}</p>
+        <p><strong>Time Range:</strong> {{ getTimeRange() }}</p>
       </div>
     </div>
   `,
@@ -111,5 +114,33 @@ export class LogVisualizationsComponent implements OnChanges {
       .sort(([, a], [, b]) => b - a)[0];
 
     return mostCommonSource;
+  }
+
+  getMostCommonLevel(): string {
+    if (!this.logs.length) return 'N/A';
+    
+    const levelCounts = this.logs.reduce((acc, log) => {
+      acc[log.level] = (acc[log.level] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const [mostCommonLevel] = Object.entries(levelCounts)
+      .sort(([, a], [, b]) => b - a)[0];
+
+    return mostCommonLevel;
+  }
+
+  getTotalLogCount(): number {
+    return this.logs.length;
+  }
+
+  getTimeRange(): string {
+    if (!this.logs.length) return 'N/A';
+    
+    const startTime = this.logs[0].timestamp;
+    const endTime = this.logs[this.logs.length - 1].timestamp;
+    const readableStartTime = new Date(startTime).toLocaleString();
+    const readableEndTime = new Date(endTime).toLocaleString();
+    return `${readableStartTime} - ${readableEndTime}`;
   }
 }

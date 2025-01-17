@@ -18,6 +18,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { LogVisualizationsComponent } from './components/log-visualizations/log-visualizations.component';
 import { BaseChartDirective} from 'ng2-charts';
 import { MessageModalComponent } from './message-modal/message-modal.component';
+import { ToastComponent } from './toast/toast.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,8 @@ import { MessageModalComponent } from './message-modal/message-modal.component';
     DashboardComponent,
     LogVisualizationsComponent,
     BaseChartDirective,
-    MessageModalComponent
+    MessageModalComponent,
+    ToastComponent
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useValue: AuthInterceptor, multi: true }

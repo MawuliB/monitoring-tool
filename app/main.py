@@ -4,10 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import Optional
 import uvicorn
 from datetime import datetime, timedelta
 from fastapi import Query
+
+from aiocache import cached, Cache
 
 from app.platforms.aws import AWSPlatform
 from app.platforms.local import LocalPlatform
@@ -106,12 +108,14 @@ async def get_credentials(
     return await credential_service.get_credentials(db, platform, current_user.id)
 
 @app.get("/log-types/{platform}")
+@cached(ttl=60, cache=Cache.MEMORY)
 async def get_log_types(platform: str):
     """Get available log types for a platform."""
     log_types = await platform_service.get_log_types(platform)
     return {"logTypes": log_types}
 
 @app.get("/log-groups")
+@cached(ttl=60, cache=Cache.MEMORY)
 async def get_log_groups(
     platform: str,
     db: Session = Depends(get_db),
@@ -140,6 +144,7 @@ async def get_log_groups(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/logs")
+@cached(ttl=60, cache=Cache.MEMORY)
 async def get_logs(
     platform: str,
     start_time: Optional[datetime] = None,

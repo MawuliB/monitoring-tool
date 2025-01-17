@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LogService } from '../../services/log.service';
 import { LogEntry } from '../../models/log.model';
@@ -6,6 +6,7 @@ import { LogFilterComponent } from '../log-filter/log-filter.component';
 import { LogTableComponent } from '../log-table/log-table.component';
 import { LogVisualizationsComponent } from '../log-visualizations/log-visualizations.component';
 import { Subscription } from 'rxjs';
+import { ToastComponent } from '../../toast/toast.component';
 
 interface LogFilter {
   startDate?: string;
@@ -26,8 +27,9 @@ interface LogFilter {
     CommonModule,
     LogFilterComponent,
     LogTableComponent,
-    LogVisualizationsComponent
-  ],
+    LogVisualizationsComponent,
+    ToastComponent
+],
   template: `
     <div class="log-viewer">
       <app-log-filter (filterChange)="setFilters($event)" [platform]="platform"></app-log-filter>
@@ -44,6 +46,13 @@ interface LogFilter {
           (click)="toggleLogTailing()"
           [class.active]="isTailingLogs"
         >{{ isTailingLogs ? 'Stop Tailing' : 'Start Tailing' }}</button>
+        <div class="dropdown">
+          <button class="dropbtn">Download Logs</button>
+          <div class="dropdown-content">
+            <a (click)="downloadLogs('json')">Download as JSON</a>
+            <a (click)="downloadLogs('csv')">Download as CSV</a>
+          </div>
+        </div>
       </div>
       
       <div class="content-area">
@@ -88,6 +97,7 @@ interface LogFilter {
         </ng-container>
       </div>
     </div>
+    <app-toast></app-toast>
   `,
   styles: [`
     .log-viewer {
@@ -95,7 +105,7 @@ interface LogFilter {
     }
 
     .view-controls {
-      margin: 1rem 0;
+      margin: 1rem 1rem;
       display: flex;
       gap: 0.5rem;
     }
@@ -131,12 +141,51 @@ interface LogFilter {
       align-items: center;
       gap: 1rem;
     }
+    .dropdown {
+        position: relative;
+        display: inline-block;
+        margin-left: auto;
+    }
+
+    .dropbtn {
+        background-color: #4CAF50; /* Green */
+        color: white;
+        padding: 10px 16px;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+    }
+
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f9f9f9;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+    .dropdown:hover .dropdown-content {
+        display: block;
+    }
+
+    .dropdown-content a {
+        color: black;
+        padding: 12px 16px;
+        text-decoration: none;
+        display: block;
+    }
+
+    .dropdown-content a:hover {
+        background-color: #f1f1f1;
+    }
   `]
 })
 export class LogViewerComponent implements OnInit {
   private subscription: Subscription | undefined;
   @Input() platform: string = '';
   @Input() reloadLogGroups: boolean = false;
+  @ViewChild(ToastComponent) toast!: ToastComponent;
 
   logs: LogEntry[] = [];
   filters: LogFilter = {};
@@ -176,7 +225,10 @@ export class LogViewerComponent implements OnInit {
   }
 
   async loadLogs() {
-    if (!this.platform || this.isTailingLogs) return;
+    if (!this.platform || this.isTailingLogs) {
+      this.toast?.openToast('Please select a platform', 'error');
+      return;
+    }
     
     try {
       this.loading = true;
@@ -185,7 +237,10 @@ export class LogViewerComponent implements OnInit {
       // Default to last hour if no dates are selected
       const now = new Date().toISOString();
       const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-      if(this.platform === 'aws' && !this.filters.logGroup) return;
+      if(this.platform === 'aws' && !this.filters.logGroup) {
+         this.toast?.openToast('Please select a log group', 'error');
+         return;
+        }
       this.logs = await this.logService.fetchLogs(
         this.platform,
         this.filters.startDate ?? oneHourAgo,
@@ -250,8 +305,10 @@ export class LogViewerComponent implements OnInit {
         (this.platform === 'aws' && !this.logGroupName.trim()) || 
         (this.platform === 'local' && !this.logType.trim())
       ) {
+        this.toast?.openToast('Please select a log group or log type', 'error');
         return;
       }      
+      this.toast?.openToast('Tailing logs for ' + this.platform + '' , 'info');
       this.subscription = this.logService.tailLogs(this.logGroupName, this.platform, this.logType).subscribe({
         next: (logEvent) => {
           if (!this.logs) {
@@ -260,6 +317,7 @@ export class LogViewerComponent implements OnInit {
           this.logs = [...this.logs, logEvent];
         },
         error: (error) => {
+          this.toast?.openToast('Error tailing logs', 'error');
           console.error('Component error:', error);
         },
         complete: () => {
@@ -274,8 +332,42 @@ export class LogViewerComponent implements OnInit {
   stopTailingLogs() {
     if (this.subscription) {
       this.subscription.unsubscribe();
+      this.toast?.openToast('Stopped tailing logs', 'info');
       console.log('Stopped tailing logs');
     }
+  }
+
+  downloadLogs(format: 'json' | 'csv') {
+    const data = this.logs; // Assuming logs is the array of log entries
+    let blob: Blob;
+    let fileName: string;
+
+    if (format === 'json') {
+        const json = JSON.stringify(data, null, 2);
+        blob = new Blob([json], { type: 'application/json' });
+        fileName = 'logs.json';
+    } else if (format === 'csv') {
+        const csv = this.convertToCSV(data);
+        blob = new Blob([csv], { type: 'text/csv' });
+        fileName = 'logs.csv';
+    } else {
+        return; // Early return if format is not recognized
+    }
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  convertToCSV(data: any[]): string {
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map(item => Object.values(item).join(','));
+    return `${headers}\n${rows.join('\n')}`;
   }
 
   // Always clean up when component is destroyed

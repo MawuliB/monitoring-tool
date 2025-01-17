@@ -1,13 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { CommonModule } from '@angular/common';
+import { ToastComponent } from '../../toast/toast.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, RouterLink, CommonModule],
+  imports: [FormsModule, RouterLink, CommonModule, ToastComponent],
   template: `
     <div class="login-container">
       <h2>Login</h2>
@@ -42,6 +43,7 @@ import { CommonModule } from '@angular/common';
         <a routerLink="/register">Register here</a>
       </p>
     </div>
+    <app-toast></app-toast>
   `,
   styles: [`
     .login-container {
@@ -100,13 +102,14 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class LoginComponent {
+  @ViewChild(ToastComponent) toast!: ToastComponent;
   username = '';
   password = '';
   error = '';
 
   constructor(
-    private authService: AuthService,
-    private router: Router
+    private readonly authService: AuthService,
+    private readonly router: Router
   ) {}
 
   onSubmit() {
@@ -117,7 +120,8 @@ export class LoginComponent {
           this.router.navigate(['/']);
         },
         error: (err) => {
-          this.error = err.error?.message || 'Login failed. Please try again.';
+          this.toast.openToast(err.error?.detail, 'error');
+          this.error = err.error?.detail || 'Login failed. Please try again.';
         }
       });
   }
