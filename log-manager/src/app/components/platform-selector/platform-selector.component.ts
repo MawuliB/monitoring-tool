@@ -21,9 +21,10 @@ export class PlatformSelectorComponent {
   @Output() platformSelected = new EventEmitter<string>();
   @Input() selectedPlatform: string | null = null;
 
-  platforms = ['aws', 'local'];
+  platforms = ['aws', 'local', 'file'];
 
   selectPlatform(platform: string) {
+    localStorage.setItem('selectedPlatform', platform);
     this.platformSelected.emit(platform);
   }
 

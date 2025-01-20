@@ -25,14 +25,14 @@ import { ApiService } from '../../services/api.service';
           </div>
         </ng-container>
 
-        <ng-container *ngIf="platform === 'local'">
+        <ng-container *ngIf="platform === 'local' || platform === 'file'">
           <h3>No Credentials Required</h3>
           <p class="text-muted">
-            No credentials are required for local platform.
+            No credentials are required for local or file platform.
           </p>
         </ng-container>
 
-        <button type="submit" [disabled]="!credentialsForm.valid || loading" *ngIf="platform !== 'local'">
+        <button type="submit" [disabled]="!credentialsForm.valid || loading" *ngIf="platform !== 'local' && platform !== 'file'">
           {{ loading ? 'Saving...' : 'Save Credentials' }}
         </button>
       </form>
