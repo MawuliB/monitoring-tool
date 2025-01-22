@@ -35,7 +35,7 @@ pipeline {
             steps {
                 sshagent(['monitoring-key']) {
                     sh '''
-                        scp -o StrictHostKeyChecking=no -r ./docker-compose.yml mawuli@20.109.1.101:/home/mawuli
+                        scp -o StrictHostKeyChecking=no -r ./docker-compose.yml mawuli@68.154.68.179:/home/mawuli
                         ssh -o StrictHostKeyChecking=no mawuli@68.154.68.179 "docker compose pull && docker compose up -d"
                     '''
                 }
