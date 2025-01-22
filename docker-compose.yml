@@ -1,5 +1,6 @@
 services:
   app:
+    container_name: app
     build:
       context: .
       dockerfile: Dockerfile
@@ -14,6 +15,7 @@ services:
       - app_network
 
   log-manager:
+    container_name: log-manager
     build:
       context: ./log-manager
       dockerfile: Dockerfile
