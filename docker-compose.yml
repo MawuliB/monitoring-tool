@@ -13,6 +13,7 @@ services:
     privileged: true
     networks:
       - app_network
+    restart: unless-stopped
 
   log-manager:
     container_name: log-manager
@@ -24,6 +25,7 @@ services:
     image: mawulib/monitor-frontend:latest
     networks:
       - app_network
+    restart: unless-stopped
 
 networks:
   app_network:
