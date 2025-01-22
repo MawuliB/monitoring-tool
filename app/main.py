@@ -152,6 +152,7 @@ async def get_logs(
     log_type: Optional[str] = None,
     log_group: Optional[str] = None,
     log_level: Optional[str] = None,
+    file_path: Optional[str] = None,
     keyword: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -168,6 +169,9 @@ async def get_logs(
         if log_type and platform == "local":
             filters["path"] = f"{local_log_dict[log_type]}"
 
+        if file_path and platform == "file":
+            filters["path"] = file_path
+
         if log_group and platform == "aws":
             filters["log_group"] = log_group
 
@@ -178,7 +182,7 @@ async def get_logs(
             filters["keyword"] = keyword
 
         logs = await platform_instance.get_logs(
-            credentials={"path": filters.get("path", "/var/log/syslog")} if platform == "local" else db.query(credentials.Credential).filter(
+            credentials={"path": filters.get("path", "/var/log/syslog")} if platform in ["local", "file"] else db.query(credentials.Credential).filter(
                 credentials.Credential.user_id == current_user.id,
                 credentials.Credential.platform == platform
             ).first().get_credentials(),
@@ -223,15 +227,17 @@ async def tail_logs(
         print("Error while tailing logs:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/logs/tail/local")
+@app.get("/logs/tail/{platform}")
 async def tail_logs(
-    log_type: str,
+    platform: str,
+    log_type: Optional[str] = None,
+    file_path: Optional[str] = None
 ):
     local_platform = LocalPlatform()
     try:
         async def event_stream():
             async for log_event in local_platform.tail_logs(
-                credentials={"path": local_log_dict[log_type]}
+                credentials={"path": local_log_dict[log_type] if platform == "local" else file_path}
                 ):
                 yield f"data: {json.dumps(log_event, cls=DateTimeEncoder)}\n\n"
 

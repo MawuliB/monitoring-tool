@@ -14,7 +14,7 @@ export class LogService {
 
   constructor(private readonly http: HttpClient) {}
 
-  async fetchLogs(platform: string, start_time: string, end_time: string, log_type: string, log_level: string, log_group: string, keyword: string): Promise<any[]> {
+  async fetchLogs(platform: string, start_time: string, end_time: string, log_type: string, log_level: string, log_group: string, keyword: string, file_path: string): Promise<any[]> {
     const filters = {
       platform,
       start_time,
@@ -22,7 +22,8 @@ export class LogService {
       log_type,
       log_level,
       log_group,
-      keyword
+      keyword,
+      file_path
     };
     try {
       const response = await firstValueFrom(
@@ -37,17 +38,19 @@ export class LogService {
     }
   }
 
-  getTailingUrl(logGroupName: string, platform: string, logType: string) {
+  getTailingUrl(logGroupName: string, platform: string, logType: string, filePath: string) {
     if (platform === 'aws') {
       return `${this.API_URL}/logs/tail/${platform}?log_group_name=${logGroupName}`;
-    } else {
+    } else if (platform === 'local') {
       return `${this.API_URL}/logs/tail/${platform}?log_type=${logType}`;
+    } else {
+      return `${this.API_URL}/logs/tail/${platform}?file_path=${filePath}`;
     }
   }
 
-  tailLogs(logGroupName: string, platform: string, logType: string): Observable<any> {
+  tailLogs(logGroupName: string, platform: string, logType: string, filePath: string): Observable<any> {
     const token = this.authService.getToken();
-    const url = this.getTailingUrl(logGroupName, platform, logType);
+    const url = this.getTailingUrl(logGroupName, platform, logType, filePath);
     return new Observable(observer => {
       console.log('Starting EventSource connection...');
       

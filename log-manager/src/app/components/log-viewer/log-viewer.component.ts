@@ -16,6 +16,7 @@ interface LogFilter {
   platform?: string | null;
   logType?: string | null;
   logGroup?: string | null; 
+  filePath?: string | null;
   keyword?: string | null;
   [key: string]: any;
 }
@@ -183,7 +184,7 @@ interface LogFilter {
 })
 export class LogViewerComponent implements OnInit {
   private subscription: Subscription | undefined;
-  @Input() platform: string = '';
+  @Input() platform: string = localStorage.getItem('selectedPlatform') ?? 'aws';
   @Input() reloadLogGroups: boolean = false;
   @ViewChild(ToastComponent) toast!: ToastComponent;
 
@@ -195,6 +196,7 @@ export class LogViewerComponent implements OnInit {
   isTailingLogs: boolean = false;
   logGroupName: string = '';
   logType: string = 'syslog';
+  filePath: string = '';
 
   // Pagination state
   currentPage = 1;
@@ -208,6 +210,7 @@ export class LogViewerComponent implements OnInit {
     if (changes['reloadLogGroups']) {
       if (!changes['reloadLogGroups'].firstChange) return;
       if (this.platform === 'aws') {
+        this.clearLogs();
       this.loadLogs();
       this.reloadLogGroups = false;
       }
@@ -222,6 +225,10 @@ export class LogViewerComponent implements OnInit {
     const start = (this.currentPage - 1) * this.pageSize;
     const end = start + this.pageSize;
     return this.logs.slice(start, end);
+  }
+
+  clearLogs() {
+    this.logs = [];
   }
 
   async loadLogs() {
@@ -248,7 +255,8 @@ export class LogViewerComponent implements OnInit {
         this.filters['logType'] ?? '',
         this.filters['level'] ?? '',
         this.filters['logGroup'] ?? '',
-        this.filters['keyword'] ?? ''
+        this.filters['keyword'] ?? '',
+        this.filters['filePath'] ?? ''
       );
       
       // Reset to first page when new logs are loaded
@@ -267,8 +275,11 @@ export class LogViewerComponent implements OnInit {
 
   setFilters(filters: LogFilter) {
     this.filters = filters;
-    this.logGroupName = filters.logGroup ?? ''; // Assign null if undefined
-    this.logType = filters.logType ?? '';
+    localStorage.setItem('logFilters', JSON.stringify(filters));
+    const filtersFromStorage = JSON.parse(localStorage.getItem('logFilters') ?? '{}');
+    this.logGroupName = filters.logGroup ?? filtersFromStorage.logGroup ?? '';
+    this.logType = filters.logType ?? filtersFromStorage.logType ?? '';
+    this.filePath = filters.filePath ?? filtersFromStorage.filePath ?? '';
     this.loadLogs();
   }
 
@@ -284,37 +295,43 @@ export class LogViewerComponent implements OnInit {
 
   toggleLogTailing() {
     this.isTailingLogs = !this.isTailingLogs;
-    if (this.platform === 'aws') {
-      if (this.isTailingLogs && this.logGroupName) {
-      this.startTailingLogs();
-    } else {
-      this.stopTailingLogs();
+  
+    // Unified validation logic for platform-specific checks  
+    const validationConditions: { [key: string]: boolean } = {
+      aws: this.isTailingLogs && !!this.logGroupName?.trim(),
+      local: this.isTailingLogs && !!this.logType?.trim(),
+      file: this.isTailingLogs && !!this.filePath?.trim(),
+    };
+  
+    if (!this.platform) {
+      this.toast?.openToast('Platform Not Selected', 'error');
+      return;
     }
-  } else if (this.platform === 'local') {
-    if (this.isTailingLogs && this.logType) {
+  
+    if (validationConditions[this.platform]) {
       this.startTailingLogs();
     } else {
       this.stopTailingLogs();
     }
   }
-  }
-
+  
   startTailingLogs() {
     if (this.platform) {
+      // Validate input before initiating the subscription
       if (
-        (this.platform === 'aws' && !this.logGroupName.trim()) || 
-        (this.platform === 'local' && !this.logType.trim())
+        (this.platform === 'aws' && !this.logGroupName?.trim()) ||
+        (this.platform === 'local' && !this.logType?.trim()) ||
+        (this.platform === 'file' && !this.filePath?.trim())
       ) {
-        this.toast?.openToast('Please select a log group or log type', 'error');
+        this.toast?.openToast('Please select or enter a log group, log type, or file path', 'error');
         return;
-      }      
-      this.toast?.openToast('Tailing logs for ' + this.platform + '' , 'info');
-      this.subscription = this.logService.tailLogs(this.logGroupName, this.platform, this.logType).subscribe({
+      }
+  
+      this.toast?.openToast(`Tailing logs for ${this.platform}`, 'info');
+  
+      this.subscription = this.logService.tailLogs(this.logGroupName, this.platform, this.logType, this.filePath).subscribe({
         next: (logEvent) => {
-          if (!this.logs) {
-            this.logs = [];
-          }
-          this.logs = [...this.logs, logEvent];
+          this.logs = [...(this.logs || []), logEvent];
         },
         error: (error) => {
           this.toast?.openToast('Error tailing logs', 'error');
@@ -322,20 +339,22 @@ export class LogViewerComponent implements OnInit {
         },
         complete: () => {
           console.log('Stream completed');
-        }
+        },
       });
     } else {
-      console.warn('platform is not defined.');
+      console.warn('Platform is not defined.');
     }
   }
   
   stopTailingLogs() {
     if (this.subscription) {
       this.subscription.unsubscribe();
+      this.isTailingLogs = false;
       this.toast?.openToast('Stopped tailing logs', 'info');
       console.log('Stopped tailing logs');
     }
   }
+  
 
   downloadLogs(format: 'json' | 'csv') {
     const data = this.logs; // Assuming logs is the array of log entries

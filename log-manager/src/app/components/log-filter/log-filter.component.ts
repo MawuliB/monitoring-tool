@@ -54,6 +54,15 @@ import { debounceTime } from 'rxjs/operators';
             </option>
           </select>
         </div>
+
+        <div class="filter-group" *ngIf="platform === 'file'">
+          <label>File Path</label>
+          <input
+            type="text"
+            formControlName="filePath"
+            placeholder="File Path"
+          />
+        </div>
       </div>
 
       <div class="filter-row">
@@ -131,10 +140,13 @@ import { debounceTime } from 'rxjs/operators';
 export class LogFilterComponent {
   @Input() platform: string = '';
   @Output() filterChange = new EventEmitter<any>();
+
   logGroups: any[] = [];
   logTypes: string[] = [];
   filterForm: FormGroup;
-  private keywordSubject = new Subject<string>();
+
+  private readonly keywordSubject = new Subject<string>();
+  private readonly filePathSubject = new Subject<string>();
 
   constructor(
     private readonly fb: FormBuilder,
@@ -146,24 +158,42 @@ export class LogFilterComponent {
       endDate: [''],
       level: [''],
       logGroup: [''],
-      logType: ['syslog']
+      logType: ['syslog'],
+      filePath: ['']
     });
 
+    // Handle debounce for keyword
     this.keywordSubject.pipe(debounceTime(2000)).subscribe(keyword => {
-      this.filterChange.emit({ keyword });
+      this.emitFilteredChange({ keyword });
     });
 
-    // Emit changes whenever any form control changes
+    // Handle debounce for filePath
+    this.filePathSubject.pipe(debounceTime(2000)).subscribe(filePath => {
+      this.emitFilteredChange({ filePath });
+    });
+
+    // Emit other filter changes immediately
     this.filterForm.valueChanges.subscribe(value => {
-      this.filterChange.emit(this.cleanFilters(value));
+      const { keyword, filePath, ...otherValues } = value; // Exclude debounced fields
+      this.emitFilteredChange(this.cleanFilters(otherValues));
     });
   }
 
   ngOnInit() {
+    // Watch for keyword changes
+    this.filterForm.get('keyword')?.valueChanges.subscribe(value => {
+      this.keywordSubject.next(value);
+    });
+
+    // Watch for filePath changes
+    this.filterForm.get('filePath')?.valueChanges.subscribe(value => {
+      this.filePathSubject.next(value);
+    });
+
     if (this.platform === 'aws') {
       this.loadAwsLogGroups();
-    }else if (this.platform === 'local') {
-      this.LoadLocalLogTypes();
+    } else if (this.platform === 'local') {
+      this.loadLocalLogTypes();
     }
   }
 
@@ -171,19 +201,19 @@ export class LogFilterComponent {
     if (changes['platform'] && !changes['platform'].firstChange) {
       if (this.platform === 'aws') {
         this.loadAwsLogGroups();
-      }else if (this.platform === 'local') {
-        this.LoadLocalLogTypes();
+      } else if (this.platform === 'local') {
+        this.loadLocalLogTypes();
       }
     }
   }
 
   onSubmit() {
-    this.filterChange.emit(this.cleanFilters(this.filterForm.value));
+    this.emitFilteredChange(this.cleanFilters(this.filterForm.value));
   }
 
   resetFilters() {
     this.filterForm.reset();
-    this.filterChange.emit({});
+    this.emitFilteredChange({});
   }
 
   private async loadAwsLogGroups() {
@@ -195,7 +225,7 @@ export class LogFilterComponent {
     }
   }
 
-  private async LoadLocalLogTypes() {
+  private async loadLocalLogTypes() {
     try {
       const response: any = await this.apiService.getLogTypes(this.platform).toPromise();
       this.logTypes = response.logTypes;
@@ -212,5 +242,9 @@ export class LogFilterComponent {
       }
       return acc;
     }, {});
+  }
+
+  private emitFilteredChange(changes: any) {
+    this.filterChange.emit(changes);
   }
 }

@@ -31,4 +31,15 @@ pipeline {
             }
         }
     }
+
+    stage('Deployment') {
+            steps {
+                sshagent(['monitoring-key']) {
+                    sh '''
+                        scp -o StrictHostKeyChecking=no -r ./docker-compose.yml mawuli@20.109.1.101:/home/mawuli
+                        ssh -o StrictHostKeyChecking=no mawuli@20.109.1.101 "docker compose pull && docker compose up -d"
+                    '''
+                }
+            }
+        }
 }

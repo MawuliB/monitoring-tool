@@ -8,7 +8,6 @@ services:
     volumes:
       - "/var/log:/var/log:ro"
       - "/mnt:/mnt:ro"
-      - "C:/Windows/System32/winevt/Logs:/Windows/System32/winevt/Logs:ro"
     image: mawulib/monitor-backend:latest
     privileged: true
 

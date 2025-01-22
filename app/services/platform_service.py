@@ -54,6 +54,8 @@ class PlatformService:
             return AWSPlatform()
         elif platform == "local":
             return LocalPlatform()
+        elif platform == "file":
+            return LocalPlatform()
         return LocalPlatform()  # Default to local for unknown platforms
 
     @staticmethod
