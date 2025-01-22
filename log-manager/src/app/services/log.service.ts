@@ -4,12 +4,13 @@ import { firstValueFrom, Observable, switchMap } from 'rxjs';
 import { LogEntry } from '../models/log.model';
 import { AuthService } from './auth.service';
 import { EventSourcePolyfill } from 'event-source-polyfill';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LogService {
-  private readonly API_URL = 'http://localhost:8000';
+  private readonly API_URL = environment.apiUrl;
   private readonly authService = inject(AuthService);
 
   constructor(private readonly http: HttpClient) {}
