@@ -30,9 +30,8 @@ pipeline {
                 }
             }
         }
-    }
 
-    stage('Deployment') {
+        stage('Deployment') {
             steps {
                 sshagent(['monitoring-key']) {
                     sh '''
@@ -42,4 +41,11 @@ pipeline {
                 }
             }
         }
+    }
+    post {
+        always {
+            cleanup()
+            cleanWs()
+        }
+    }
 }
