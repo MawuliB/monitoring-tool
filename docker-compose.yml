@@ -10,6 +10,8 @@ services:
       - "/mnt:/mnt:ro"
     image: mawulib/monitor-backend:latest
     privileged: true
+    networks:
+      - app_network
 
   log-manager:
     build:
@@ -18,3 +20,9 @@ services:
     ports:
       - "4200:4200"
     image: mawulib/monitor-frontend:latest
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
