@@ -19,31 +19,35 @@ class LocalPlatform(LogPlatform):
                 return 'DEBUG'
             return 'INFO'
         
+
     def extract_timestamp(self, line: str) -> str:
-        """Extract timestamp from a log line. Default to current time if not found."""
-        timestamp_match = re.search(r'(\w{3})\s+(\d{1,2})\s+(\d{2}:\d{2}:\d{2})', line)
-        if timestamp_match:
+        # Try ISO format first (cloud logs)
+        iso_match = re.search(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})', line)
+        if iso_match:
+            return iso_match.group(1).replace('T', ' ')
+
+        # Try syslog format (local logs)
+        syslog_match = re.search(r'(\w{3})\s+(\d{1,2})\s+(\d{2}:\d{2}:\d{2})', line)
+        if syslog_match:
             month_map = {
-                'Jan': '01',
-                'Feb': '02',
-                'Mar': '03',
-                'Apr': '04',
-                'May': '05',
-                'Jun': '06',
-                'Jul': '07',
-                'Aug': '08',
-                'Sep': '09',
-                'Oct': '10',
-                'Nov': '11',
-                'Dec': '12'
+                'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+                'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08',
+                'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
             }
-            month, day, time = timestamp_match.groups()
-            # Ensure the day is zero-padded for consistency
-            day = day.zfill(2)
+            month, day, time = syslog_match.groups()
+            day = day.zfill(2)  # Ensure day is zero-padded
             return f"{datetime.now().year}-{month_map[month]}-{day} {time}"
-        
-        # If no timestamp is found, return "N/A"
-        return "N/A"
+
+        # Try additional formats here
+        # Example: logs with different date format
+        alt_match = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d{2}:\d{2}:\d{2})', line)
+        if alt_match:
+            date, time = alt_match.groups()
+            dt = datetime.strptime(f"{date} {time}", "%m/%d/%Y %H:%M:%S")
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        # If no timestamp is found, return current time
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
     async def get_logs(
         self,
