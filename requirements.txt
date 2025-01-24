@@ -10,3 +10,7 @@ boto3
 python-dotenv
 alembic
 aiocache
+azure-identity 
+azure-monitor-query 
+google-cloud-logging
+elasticsearch[async]

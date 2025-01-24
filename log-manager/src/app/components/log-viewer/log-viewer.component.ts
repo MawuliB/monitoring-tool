@@ -209,7 +209,7 @@ export class LogViewerComponent implements OnInit {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['reloadLogGroups']) {
       if (!changes['reloadLogGroups'].firstChange) return;
-      if (this.platform === 'aws') {
+      if (this.platform === 'aws' || this.platform === 'azure' || this.platform === 'gcp' || this.platform === 'els') {
         this.clearLogs();
       this.loadLogs();
       this.reloadLogGroups = false;
@@ -244,7 +244,7 @@ export class LogViewerComponent implements OnInit {
       // Default to last hour if no dates are selected
       const now = new Date().toISOString();
       const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-      if(this.platform === 'aws' && !this.filters.logGroup) {
+      if((this.platform === 'aws' || this.platform === 'azure' || this.platform === 'gcp' || this.platform === 'els') && !this.filters.logGroup) {
          this.toast?.openToast('Please select a log group', 'error');
          return;
         }

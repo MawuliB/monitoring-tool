@@ -18,14 +18,14 @@ async def create_credential(
     
     if db_credential:
         # Update existing credentials
-        db_credential.set_credentials(credential.model_dump())
+        db_credential.set_credentials(credential.model_dump(exclude_none=True))
     else:
         # Create new credentials
         db_credential = Credential(
             user_id=user_id,
             platform=platform
         )
-        db_credential.set_credentials(credential.model_dump())
+        db_credential.set_credentials(credential.model_dump(exclude_none=True))
         db.add(db_credential)
     
     db.commit()

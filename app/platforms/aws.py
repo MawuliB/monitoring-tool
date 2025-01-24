@@ -1,5 +1,5 @@
 from .base import LogPlatform
-from ..cloud import CloudWatchLogsReader
+from ..reader.cloud import CloudWatchLogsReader
 from typing import Optional
 
 class AWSPlatform(LogPlatform):

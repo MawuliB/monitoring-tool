@@ -15,9 +15,9 @@ from app.platforms.aws import AWSPlatform
 from app.platforms.local import LocalPlatform
 
 from .database import get_db, engine
-from .models import credentials, logs, users
+from .models import credentials, users
 from .schemas import CredentialCreate, CredentialResponse, LogQuery, UserCreate, User, Token
-from .services import log_service, credential_service, platform_service
+from .services import credential_service, platform_service
 from .auth import (
     get_current_user,
     authenticate_user,
@@ -123,7 +123,7 @@ async def get_log_groups(
 ):
     """Get available log groups for the specified platform."""
     try:
-        if platform == "aws":
+        if platform == "aws" or platform == "azure" or platform == "gcp" or platform == "els":
             credential = db.query(credentials.Credential).filter(
                 credentials.Credential.user_id == current_user.id,
                 credentials.Credential.platform == platform
@@ -137,7 +137,8 @@ async def get_log_groups(
                 raise HTTPException(status_code=404, detail="Platform not configured")
                 
             log_groups = await platform_instance.get_log_groups(credential.get_credentials())
-        
+        else:
+            raise HTTPException(status_code=404, detail="Platform not configured")
         return {"log_groups": log_groups}
     except Exception as e:
         print(e)
@@ -172,7 +173,7 @@ async def get_logs(
         if file_path and platform == "file":
             filters["path"] = file_path
 
-        if log_group and platform == "aws":
+        if log_group and (platform == "aws" or platform == "azure" or platform == "gcp" or platform == "els"):
             filters["log_group"] = log_group
 
         if log_level and log_level.lower() in log_levels:
