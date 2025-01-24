@@ -185,9 +185,12 @@ class GoogleCloudLogsReader:
         limit: Optional[int] = None
     ) -> Iterator[LogEvent]:
         """Retrieve log events from Google Cloud Logging."""
-        # remove url encoding
-        log_name = log_name.replace('%2F', '/')
+        # # remove url encoding
+        # log_name = log_name.replace('%2F', '/') # will uncomment this later
+        # cut only the log name
+        log_name = log_name.split('/')[-1]
         print(log_name)
+
         logger = self.client.logger(log_name)
 
         # Helper function to format timestamps
@@ -211,8 +214,6 @@ class GoogleCloudLogsReader:
         
         # Apply filters
         log_filter = ' AND '.join(filter_parts) if filter_parts else None
-
-        print(log_filter)
         
         try:
             entries = logger.list_entries(filter_=log_filter, page_token=None, page_size=limit or 1000)
