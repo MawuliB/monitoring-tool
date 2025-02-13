@@ -10,7 +10,8 @@ class AzurePlatform(LogPlatform):
         reader = AzureLogReader(
             tenant_id=credentials['tenant_id'],
             client_id=credentials['client_id'],
-            client_secret=credentials['client_secret']
+            client_secret=credentials['client_secret'],
+            subscription_id=credentials['subscription_id']
         )
         
         logs = reader.get_log_events(
@@ -33,7 +34,8 @@ class AzurePlatform(LogPlatform):
         reader = AzureLogReader(
             tenant_id=credentials['tenant_id'],
             client_id=credentials['client_id'],
-            client_secret=credentials['client_secret']
+            client_secret=credentials['client_secret'],
+            subscription_id=credentials['subscription_id']
         )
         return reader.get_log_workspaces()
 
@@ -52,7 +54,8 @@ class AzurePlatform(LogPlatform):
         reader = AzureLogReader(
             tenant_id=credentials['tenant_id'],
             client_id=credentials['client_id'],
-            client_secret=credentials['client_secret']
+            client_secret=credentials['client_secret'],
+            subscription_id=credentials['subscription_id']
         )
         try:
             async for log_event in reader.tail_logs(log_workspace_id, interval, filter_pattern):

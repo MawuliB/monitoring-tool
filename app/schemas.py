@@ -15,6 +15,7 @@ class CredentialCreate(BaseModel):
     tenant_id: Optional[str] = None
     client_id: Optional[str] = None
     client_secret: Optional[str] = None
+    subscription_id: Optional[str] = None
     # els
     host: Optional[str] = None
     username: Optional[str] = None

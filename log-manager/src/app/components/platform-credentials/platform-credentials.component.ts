@@ -38,6 +38,10 @@ import { ApiService } from '../../services/api.service';
             <label>Client Secret</label>
             <input type="password" formControlName="client_secret" />
           </div>
+          <div class="form-group">
+            <label>Subscription ID</label>
+            <input type="text" formControlName="subscription_id" />
+          </div>
         </ng-container>
 
         <ng-container *ngIf="platform === 'els'">
@@ -185,6 +189,7 @@ export class PlatformCredentialsComponent implements OnInit {
       tenant_id: [''],
       client_id: [''],
       client_secret: [''],
+      subscription_id: [''],
       host: [''],
       api_key: [''],
     });
@@ -257,6 +262,7 @@ export class PlatformCredentialsComponent implements OnInit {
       this.credentialsForm.get('tenant_id')?.setValidators([Validators.required]);
       this.credentialsForm.get('client_id')?.setValidators([Validators.required]);
       this.credentialsForm.get('client_secret')?.setValidators([Validators.required]);
+      this.credentialsForm.get('subscription_id')?.setValidators([Validators.required]);
     this.credentialsForm.updateValueAndValidity();
   }
 
@@ -325,7 +331,8 @@ export class PlatformCredentialsComponent implements OnInit {
       return {
         tenant_id: formValue.tenant_id,
         client_id: formValue.client_id,
-        client_secret: formValue.client_secret
+        client_secret: formValue.client_secret,
+        subscription_id: formValue.subscription_id
       };
     } else if (this.platform === 'els') {
       return {
