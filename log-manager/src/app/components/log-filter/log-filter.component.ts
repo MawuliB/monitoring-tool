@@ -37,7 +37,7 @@ import { debounceTime } from 'rxjs/operators';
           </select>
         </div>
 
-        <div class="filter-group" *ngIf="platform === 'aws'">
+        <div class="filter-group" *ngIf="platform === 'aws' || platform === 'azure' || platform === 'gcp' || platform === 'els'">
           <label>Log Group</label>
           <select formControlName="logGroup">
             <option *ngFor="let group of logGroups" [value]="group.name">
@@ -190,7 +190,7 @@ export class LogFilterComponent {
       this.filePathSubject.next(value);
     });
 
-    if (this.platform === 'aws') {
+    if (this.platform === 'aws' || this.platform === 'azure' || this.platform === 'gcp' || this.platform === 'els') {
       this.loadAwsLogGroups();
     } else if (this.platform === 'local') {
       this.loadLocalLogTypes();
@@ -199,7 +199,7 @@ export class LogFilterComponent {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['platform'] && !changes['platform'].firstChange) {
-      if (this.platform === 'aws') {
+      if (this.platform === 'aws' || this.platform === 'azure' || this.platform === 'gcp' || this.platform === 'els') {
         this.loadAwsLogGroups();
       } else if (this.platform === 'local') {
         this.loadLocalLogTypes();

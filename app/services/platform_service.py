@@ -1,7 +1,8 @@
-from sqlalchemy.orm import Session
-from ..models.credentials import Credential
 from ..platforms.aws import AWSPlatform
 from ..platforms.local import LocalPlatform
+from ..platforms.azure import AzurePlatform
+from ..platforms.google import GoogleCloudPlatform
+from ..platforms.els import ElasticsearchPlatform
 from typing import Dict, List, Any
 import os
 import platform
@@ -56,6 +57,12 @@ class PlatformService:
             return LocalPlatform()
         elif platform == "file":
             return LocalPlatform()
+        elif platform == "els":
+            return ElasticsearchPlatform()
+        elif platform == "gcp":
+            return GoogleCloudPlatform()
+        elif platform == "azure":
+            return AzurePlatform()
         return LocalPlatform()  # Default to local for unknown platforms
 
     @staticmethod
