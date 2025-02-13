@@ -20,6 +20,11 @@ pipeline {
         label 'agent1'
     }
 
+    environment {
+        INSTANCE_USER = 'ubuntu'
+        INSTANCE_IP = '18.201.187.71'
+    }
+
     stages {
         stage('Push to Docker Hub') {
             steps {
@@ -35,8 +40,8 @@ pipeline {
             steps {
                 sshagent(['monitoring-key']) {
                     sh '''
-                        scp -o StrictHostKeyChecking=no -r ./docker-compose.yml mawuli@68.154.68.179:/home/mawuli
-                        ssh -o StrictHostKeyChecking=no mawuli@68.154.68.179 "docker compose pull && docker compose up -d"
+                        scp -o StrictHostKeyChecking=no -r ./docker-compose.yml ${INSTANCE_USER}@${INSTANCE_IP}:/home/${INSTANCE_USER}/
+                        ssh -o StrictHostKeyChecking=no ${INSTANCE_USER}@${INSTANCE_IP} "docker compose pull && docker compose up -d"
                     '''
                 }
             }
