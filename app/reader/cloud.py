@@ -11,6 +11,7 @@ from google.oauth2 import service_account
 from elasticsearch import Elasticsearch
 from azure.identity import ClientSecretCredential
 from azure.monitor.query import LogsQueryClient
+from azure.mgmt.loganalytics import LogAnalyticsManagementClient
 
 @dataclass
 class LogEvent:
@@ -392,13 +393,15 @@ class ElasticsearchLogsReader:
 class AzureLogReader:
     """A class to read and process Azure Log Analytics logs."""
     
-    def __init__(self, tenant_id: str, client_id: str, client_secret: str):
+    def __init__(self, tenant_id: str, client_id: str, client_secret: str, subscription_id: str):
         """Initialize the Azure Log Analytics reader."""
         self.credential = ClientSecretCredential(
             tenant_id=tenant_id,
             client_id=client_id,
             client_secret=client_secret
         )
+
+        self.subscription_id = subscription_id
     
     def _parse_log_level(self, message: str) -> str:
         """Parse log level from message. Default to INFO if not found."""
@@ -453,9 +456,9 @@ class AzureLogReader:
     
     def get_log_workspaces(self) -> List[Dict[str, str]]:
         """Retrieve available log workspaces."""
-        # Note: Implementation depends on specific Azure SDK methods
-        # This is a placeholder and might need adjustment based on exact Azure SDK capabilities
-        return []
+        client = LogAnalyticsManagementClient(self.credential, self.subscription_id)
+        workspaces = client.workspaces.list()
+        return [{'id': ws.customer_id, 'name': ws.name} for ws in workspaces]
     
     async def tail_logs(
         self,
