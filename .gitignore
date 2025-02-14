@@ -3,6 +3,7 @@ env/
 *.json
 reports/
 __pycache__/
+.pytest_cache/
 *.db
 # max env data
 .env
