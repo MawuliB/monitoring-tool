@@ -1,12 +1,13 @@
-import { Component, Input, OnInit, SimpleChanges, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, SimpleChanges, Output, EventEmitter, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
+import { ToastComponent } from '../../toast/toast.component';
 
 @Component({
   selector: 'app-platform-credentials',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ToastComponent],
   template: `
     <div class="credentials-container">
       <form [formGroup]="credentialsForm" (ngSubmit)="onSubmit()">
@@ -88,6 +89,7 @@ import { ApiService } from '../../services/api.service';
         </button>
       </form>
     </div>
+    <app-toast></app-toast>
   `,
   styles: [`
     .credentials-container {
@@ -133,6 +135,7 @@ import { ApiService } from '../../services/api.service';
 export class PlatformCredentialsComponent implements OnInit {
   @Input() platform: string = '';
   @Output() credentialsSaved = new EventEmitter<any>();
+  @ViewChild(ToastComponent) toast!: ToastComponent;
   
   credentialsForm: FormGroup;
   loading = false;
@@ -173,6 +176,7 @@ export class PlatformCredentialsComponent implements OnInit {
         this.serviceAccountInfoContent = content;
       };
       reader.onerror = (error) => {
+        this.toast?.openToast('Error reading file', 'error');
         console.log(error);
       };
     }
@@ -217,6 +221,7 @@ export class PlatformCredentialsComponent implements OnInit {
       this.credentialsForm.updateValueAndValidity();
     }
     catch (error) {
+      this.toast?.openToast('Enter platform credentials to view logs', 'error');
       console.error('Error loading platform credentials:', error);
     }
   }
@@ -291,6 +296,7 @@ export class PlatformCredentialsComponent implements OnInit {
         this.credentialsForm.patchValue(credentials);
       }
     } catch (error) {
+      this.toast?.openToast('Error getting platform credentials', 'error');
       console.error('Error getting platform credentials:', error);
     }
   }
@@ -311,6 +317,7 @@ export class PlatformCredentialsComponent implements OnInit {
         await this.apiService.savePlatformCredentials(this.platform, credentials).toPromise();
         this.credentialsSaved.emit();
       } catch (error) {
+        this.toast?.openToast('Error saving credentials', 'error');
         console.error('Error saving credentials:', error);
       } finally {
         this.loading = false;

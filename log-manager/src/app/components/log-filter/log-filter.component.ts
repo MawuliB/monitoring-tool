@@ -4,17 +4,19 @@ import {
   Input,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
 import { Subject } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
+import { ToastComponent } from "../../toast/toast.component";
 
 @Component({
   selector: 'app-log-filter',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ToastComponent],
   template: `
     <form [formGroup]="filterForm" (ngSubmit)="onSubmit()" class="log-filter">
       <div class="filter-row">
@@ -97,6 +99,7 @@ import { debounceTime } from 'rxjs/operators';
         </div>
       </div>
     </form>
+    <app-toast></app-toast>
   `,
   styles: [
     `
@@ -160,6 +163,7 @@ import { debounceTime } from 'rxjs/operators';
 export class LogFilterComponent {
   @Input() platform: string = '';
   @Output() filterChange = new EventEmitter<any>();
+  @ViewChild(ToastComponent) toast!: ToastComponent;
 
   logGroups: any[] = [];
   logTypes: string[] = [];
@@ -253,6 +257,7 @@ export class LogFilterComponent {
         .toPromise();
       this.logGroups = response.log_groups;
     } catch (error) {
+      this.toast?.openToast(`Error loading ${this.platform} log groups`, 'error');
       console.error('Error loading AWS log groups:', error);
     }
   }
@@ -264,6 +269,7 @@ export class LogFilterComponent {
         .toPromise();
       this.logTypes = response.logTypes;
     } catch (error) {
+      this.toast?.openToast('Error loading local log types', 'error');
       console.error('Error loading local log types:', error);
     }
   }
