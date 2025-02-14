@@ -1,4 +1,10 @@
-import { Component, EventEmitter, Input, Output, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -25,7 +31,7 @@ import { debounceTime } from 'rxjs/operators';
             placeholder="End Date"
           />
         </div>
-        
+
         <div class="filter-group">
           <label>Log Level</label>
           <select formControlName="level">
@@ -37,11 +43,22 @@ import { debounceTime } from 'rxjs/operators';
           </select>
         </div>
 
-        <div class="filter-group" *ngIf="platform === 'aws' || platform === 'azure' || platform === 'gcp' || platform === 'els'">
+        <div
+          class="filter-group"
+          *ngIf="
+            platform === 'aws' ||
+            platform === 'azure' ||
+            platform === 'gcp' ||
+            platform === 'els'
+          "
+        >
           <label>Log Group</label>
           <select formControlName="logGroup">
-            <option *ngFor="let group of logGroups" [value]="group.name">
-              {{group.name}}
+            <option
+              *ngFor="let group of logGroups"
+              [value]="platform === 'azure' ? group.id : group.name"
+            >
+              {{ group.name }}
             </option>
           </select>
         </div>
@@ -50,7 +67,7 @@ import { debounceTime } from 'rxjs/operators';
           <label>Log Type</label>
           <select formControlName="logType">
             <option *ngFor="let type of logTypes" [value]="type">
-              {{type}}
+              {{ type }}
             </option>
           </select>
         </div>
@@ -73,7 +90,7 @@ import { debounceTime } from 'rxjs/operators';
             placeholder="Search logs..."
           />
         </div>
-        
+
         <div class="filter-group">
           <button type="submit">Apply Filters</button>
           <button type="button" (click)="resetFilters()">Reset</button>
@@ -81,61 +98,64 @@ import { debounceTime } from 'rxjs/operators';
       </div>
     </form>
   `,
-  styles: [`
-    .log-filter {
-      padding: 1rem;
-      background: #f5f5f5;
-      border-radius: 4px;
-    }
+  styles: [
+    `
+      .log-filter {
+        padding: 1rem;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
 
-    .filter-row {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
+      .filter-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
 
-    .filter-group {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-    }
+      .filter-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
 
-    .filter-group.search {
-      flex: 1;
-    }
+      .filter-group.search {
+        flex: 1;
+      }
 
-    input, select {
-      padding: 0.5rem;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
+      input,
+      select {
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
 
-    input[type="text"] {
-      width: 100%;
-    }
+      input[type='text'] {
+        width: 100%;
+      }
 
-    button {
-      padding: 0.5rem 1rem;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+      button {
+        padding: 0.5rem 1rem;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
 
-    button[type="button"] {
-      background: #6c757d;
-    }
+      button[type='button'] {
+        background: #6c757d;
+      }
 
-    button:hover {
-      opacity: 0.9;
-    }
+      button:hover {
+        opacity: 0.9;
+      }
 
-    label {
-      font-weight: 500;
-      color: #495057;
-    }
-  `]
+      label {
+        font-weight: 500;
+        color: #495057;
+      }
+    `,
+  ],
 })
 export class LogFilterComponent {
   @Input() platform: string = '';
@@ -159,21 +179,21 @@ export class LogFilterComponent {
       level: [''],
       logGroup: [''],
       logType: ['syslog'],
-      filePath: ['']
+      filePath: [''],
     });
 
     // Handle debounce for keyword
-    this.keywordSubject.pipe(debounceTime(2000)).subscribe(keyword => {
+    this.keywordSubject.pipe(debounceTime(2000)).subscribe((keyword) => {
       this.emitFilteredChange({ keyword });
     });
 
     // Handle debounce for filePath
-    this.filePathSubject.pipe(debounceTime(2000)).subscribe(filePath => {
+    this.filePathSubject.pipe(debounceTime(2000)).subscribe((filePath) => {
       this.emitFilteredChange({ filePath });
     });
 
     // Emit other filter changes immediately
-    this.filterForm.valueChanges.subscribe(value => {
+    this.filterForm.valueChanges.subscribe((value) => {
       const { keyword, filePath, ...otherValues } = value; // Exclude debounced fields
       this.emitFilteredChange(this.cleanFilters(otherValues));
     });
@@ -181,16 +201,21 @@ export class LogFilterComponent {
 
   ngOnInit() {
     // Watch for keyword changes
-    this.filterForm.get('keyword')?.valueChanges.subscribe(value => {
+    this.filterForm.get('keyword')?.valueChanges.subscribe((value) => {
       this.keywordSubject.next(value);
     });
 
     // Watch for filePath changes
-    this.filterForm.get('filePath')?.valueChanges.subscribe(value => {
+    this.filterForm.get('filePath')?.valueChanges.subscribe((value) => {
       this.filePathSubject.next(value);
     });
 
-    if (this.platform === 'aws' || this.platform === 'azure' || this.platform === 'gcp' || this.platform === 'els') {
+    if (
+      this.platform === 'aws' ||
+      this.platform === 'azure' ||
+      this.platform === 'gcp' ||
+      this.platform === 'els'
+    ) {
       this.loadAwsLogGroups();
     } else if (this.platform === 'local') {
       this.loadLocalLogTypes();
@@ -199,7 +224,12 @@ export class LogFilterComponent {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['platform'] && !changes['platform'].firstChange) {
-      if (this.platform === 'aws' || this.platform === 'azure' || this.platform === 'gcp' || this.platform === 'els') {
+      if (
+        this.platform === 'aws' ||
+        this.platform === 'azure' ||
+        this.platform === 'gcp' ||
+        this.platform === 'els'
+      ) {
         this.loadAwsLogGroups();
       } else if (this.platform === 'local') {
         this.loadLocalLogTypes();
@@ -218,7 +248,9 @@ export class LogFilterComponent {
 
   private async loadAwsLogGroups() {
     try {
-      const response: any = await this.apiService.getLogGroups(this.platform).toPromise();
+      const response: any = await this.apiService
+        .getLogGroups(this.platform)
+        .toPromise();
       this.logGroups = response.log_groups;
     } catch (error) {
       console.error('Error loading AWS log groups:', error);
@@ -227,7 +259,9 @@ export class LogFilterComponent {
 
   private async loadLocalLogTypes() {
     try {
-      const response: any = await this.apiService.getLogTypes(this.platform).toPromise();
+      const response: any = await this.apiService
+        .getLogTypes(this.platform)
+        .toPromise();
       this.logTypes = response.logTypes;
     } catch (error) {
       console.error('Error loading local log types:', error);

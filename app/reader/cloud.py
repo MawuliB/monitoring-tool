@@ -12,6 +12,7 @@ from elasticsearch import Elasticsearch
 from azure.identity import ClientSecretCredential
 from azure.monitor.query import LogsQueryClient
 from azure.mgmt.loganalytics import LogAnalyticsManagementClient
+from azure.identity import AzureAuthorityHosts
 
 @dataclass
 class LogEvent:
@@ -398,7 +399,9 @@ class AzureLogReader:
         self.credential = ClientSecretCredential(
             tenant_id=tenant_id,
             client_id=client_id,
-            client_secret=client_secret
+            client_secret=client_secret,
+            authority=AzureAuthorityHosts.AZURE_PUBLIC_CLOUD,
+            logging_enable=True
         )
 
         self.subscription_id = subscription_id
@@ -433,15 +436,15 @@ class AzureLogReader:
         # Time range
         start_time = start_time or datetime.now() - timedelta(hours=1)
         end_time = end_time or datetime.now()
+        timespan = end_time - start_time
         
         # Limit
         if limit:
             query += f" | take {limit}"
         
         try:
-            result = client.query_workspace(workspace_id, query, 
-                                            start_time=start_time, 
-                                            end_time=end_time)
+            result = client.query_workspace(workspace_id, query,
+                                            timespan=timespan)
             
             for row in result.tables[0].rows:
                 yield LogEvent(
